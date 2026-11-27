@@ -16,6 +16,8 @@ struct ContentView: View {
     @State private var renameDraft = ""
     @State private var draggingItemID: String?
     @State private var showingHidden = false
+    @State private var editorDraft: ButtonEditorDraft?
+    @State private var editorBusy = false
     @FocusState private var fieldFocused: Bool
     @FocusState private var searchFieldFocused: Bool
     @State private var voice = VoiceRecognizer()
@@ -170,6 +172,40 @@ struct ContentView: View {
         } message: {
             Text("Only this iPad sees “\(renameDraft.isEmpty ? pendingRenameFallback : renameDraft)”. Speak still uses the original voice.")
         }
+        .sheet(isPresented: editorPresented) {
+            if editorDraft != nil {
+                ButtonEditorSheet(
+                    draft: editorDraftBinding,
+                    availableFolders: store.grouping.folders.map { (id: $0.id, name: store.displayLabel(for: $0)) },
+                    isBusy: editorBusy || store.isAdding,
+                    errorMessage: store.errorMessage,
+                    onSave: { Task { await saveEditor() } },
+                    onCancel: { editorDraft = nil },
+                    onHide: hideEditorItem,
+                    onDelete: deleteEditorItem
+                )
+            }
+        }
+        .onChange(of: mode.isEditing) { _, editing in
+            if editing { showingHidden = false }
+        }
+        .onChange(of: horizontalSizeClass) { _, _ in
+            grid.applySizeClassDefaultsIfNeeded(isCompact: horizontalSizeClass == .compact)
+        }
+    }
+
+    private var editorPresented: Binding<Bool> {
+        Binding(
+            get: { editorDraft != nil },
+            set: { if !$0 { editorDraft = nil } }
+        )
+    }
+
+    private var editorDraftBinding: Binding<ButtonEditorDraft> {
+        Binding(
+            get: { editorDraft ?? .blank(at: GridCoord(row: 0, col: 0)) },
+            set: { editorDraft = $0 }
+        )
     }
 
     private var hideAlertPresented: Binding<Bool> {
@@ -221,17 +257,19 @@ struct ContentView: View {
 
     private var topBar: some View {
         VStack(spacing: 12) {
-            HStack(spacing: 16) {
+            HStack(spacing: chrome.isCompact ? 8 : 16) {
                 folderNav
                 title
-                Spacer(minLength: 8)
-                if mode.showsAddChrome {
-                    caregiverTools
-                }
+                Spacer(minLength: 4)
+                EditLockButton(mode: mode, isCompact: chrome.isCompact, onLock: lockEditing)
             }
             if mode.showsProfileSwitcher {
-                profileSwitcher
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 12) {
+                    profileSwitcher
+                    Spacer(minLength: 8)
+                    caregiverTools
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             if mode.showsAddChrome {
                 addChrome
@@ -240,39 +278,13 @@ struct ContentView: View {
                 searchChrome
             }
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, mode.showsAddChrome ? 16 : 14)
+        .padding(.horizontal, chrome.isCompact ? 12 : 24)
+        .padding(.vertical, mode.showsAddChrome ? (chrome.isCompact ? 8 : 16) : 14)
         .background(Theme.slate)
     }
 
     private var caregiverTools: some View {
         HStack(spacing: 12) {
-            if mode.showsEditButton {
-                Button {
-                    if mode.isEditing {
-                        mode.exitEdit()
-                    } else {
-                        showingHidden = false
-                        mode.enterEdit()
-                    }
-                } label: {
-                    Text(mode.isEditing ? "Done" : "Edit")
-                        .font(.system(size: 22, weight: .heavy, design: .rounded))
-                        .frame(minWidth: 88, minHeight: 56)
-                        .foregroundStyle(Theme.cream)
-                        .background(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(mode.isEditing ? Theme.coral : Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                        .stroke(Theme.cream.opacity(0.65), lineWidth: 3)
-                                )
-                        )
-                }
-                .accessibilityLabel(mode.isEditing ? "Done editing" : "Edit board")
-                .accessibilityIdentifier(mode.isEditing ? "doneEditing" : "editBoard")
-            }
-
             if mode.showsHiddenList {
                 Button {
                     showingHidden.toggle()
@@ -298,17 +310,7 @@ struct ContentView: View {
                 .accessibilityIdentifier("hiddenList")
             }
 
-            Button {
-                fieldFocused = false
-                searchFieldFocused = false
-                draft = ""
-                store.setSearchQuery("")
-                showingHidden = false
-                pendingHide = nil
-                pendingVoiceWord = nil
-                voice.cancel()
-                mode.lock()
-            } label: {
+            Button(action: lockEditing) {
                 Text("Lock")
                     .font(.system(size: 22, weight: .heavy, design: .rounded))
                     .frame(minWidth: 88, minHeight: 56)
@@ -353,34 +355,78 @@ struct ContentView: View {
         .accessibilityIdentifier("profileSwitcher")
     }
 
-    /// Caregiver-only 2 / 3 / 4 column control. Kid mode still uses `grid.columnCount`.
+    /// Caregiver-only row × column size. Kid mode still uses the saved counts.
     private var gridPicker: some View {
-        HStack(spacing: 6) {
-            ForEach(GridLayout.allowedCounts, id: \.self) { count in
-                Button {
-                    grid.setColumnCount(count)
-                } label: {
-                    Text("\(count)")
-                        .font(.system(size: 22, weight: .heavy, design: .rounded))
-                        .frame(minWidth: 48, minHeight: 56)
-                        .foregroundStyle(Theme.cream)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(grid.columnCount == count ? Theme.coral : Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .stroke(Theme.cream.opacity(0.65), lineWidth: 3)
-                                )
-                        )
-                }
-                .accessibilityLabel("\(count) columns")
-                .accessibilityIdentifier("gridColumns-\(count)")
-                .accessibilityAddTraits(grid.columnCount == count ? .isSelected : [])
-            }
+        HStack(spacing: 10) {
+            gridStepper(
+                title: "Columns",
+                value: grid.columnCount,
+                range: GridLayout.allowedColumnRange,
+                identifier: "gridColumns",
+                accessibility: "columns"
+            ) { grid.setColumnCount($0) }
+            gridStepper(
+                title: "Rows",
+                value: grid.rowCount,
+                range: GridLayout.allowedRowRange,
+                identifier: "gridRows",
+                accessibility: "rows"
+            ) { grid.setRowCount($0) }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Grid columns")
-        .accessibilityIdentifier("gridColumns")
+        .accessibilityLabel("Grid size")
+        .accessibilityIdentifier("gridSize")
+    }
+
+    private func gridStepper(
+        title: String,
+        value: Int,
+        range: ClosedRange<Int>,
+        identifier: String,
+        accessibility: String,
+        set: @escaping (Int) -> Void
+    ) -> some View {
+        HStack(spacing: 6) {
+            Button {
+                set(value - 1)
+            } label: {
+                Image(systemName: "minus")
+                    .font(.system(size: 16, weight: .heavy))
+                    .frame(width: 36, height: 44)
+            }
+            .disabled(value <= range.lowerBound)
+            .accessibilityLabel("Fewer \(accessibility)")
+            .accessibilityIdentifier("\(identifier)Minus")
+
+            VStack(spacing: 0) {
+                Text(title)
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                Text("\(value)")
+                    .font(.system(size: 22, weight: .heavy, design: .rounded))
+            }
+            .foregroundStyle(Theme.cream)
+            .frame(minWidth: 64)
+            .accessibilityLabel("\(value) \(accessibility)")
+            .accessibilityIdentifier("\(identifier)")
+            .accessibilityValue("\(value)")
+
+            Button {
+                set(value + 1)
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 16, weight: .heavy))
+                    .frame(width: 36, height: 44)
+            }
+            .disabled(value >= range.upperBound)
+            .accessibilityLabel("More \(accessibility)")
+            .accessibilityIdentifier("\(identifier)Plus")
+        }
+        .foregroundStyle(Theme.cream)
+        .padding(.horizontal, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Theme.cream.opacity(0.65), lineWidth: 3)
+        )
     }
 
     /// Folder Home / Back — not the sentence-strip backspace (that control is already labeled Back).
@@ -437,7 +483,9 @@ struct ContentView: View {
     private var title: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("Hope's Voice")
-                .font(.system(.title2, design: .rounded).weight(.heavy))
+                .font(.system(chrome.isCompact ? .headline : .title2, design: .rounded).weight(.heavy))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
                 .foregroundStyle(Theme.cream)
             Text(profiles.activeName)
                 .font(.system(.subheadline, design: .rounded).weight(.heavy))
@@ -464,7 +512,7 @@ struct ContentView: View {
         .padding(.trailing, 8)
         .contentShape(Rectangle())
         .onLongPressGesture(minimumDuration: CaregiverMode.unlockHoldDuration) {
-            mode.unlock()
+            mode.unlockAndEdit()
         }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("boardTitle")
@@ -473,7 +521,22 @@ struct ContentView: View {
     }
 
     private var addChrome: some View {
+        VStack(alignment: .leading, spacing: 10) {
+        ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 16) {
+            Button {
+                openNewButtonEditor()
+            } label: {
+                Text("+ Add button")
+                    .font(.system(size: chrome.isCompact ? 16 : 22, weight: .heavy, design: .rounded))
+                    .frame(minWidth: chrome.isCompact ? 108 : 148, minHeight: chrome.isCompact ? 52 : 64)
+                    .foregroundStyle(Theme.cream)
+                    .background(Theme.coral)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            }
+            .accessibilityLabel("Add button")
+            .accessibilityIdentifier("addButton")
+
             gridPicker
 
             TextField("type a word", text: $draft)
@@ -532,6 +595,64 @@ struct ContentView: View {
                 voiceMicButton
             }
         }
+        }
+        ScrollView(.horizontal, showsIndicators: false) {
+            messageBarSettings
+        }
+        }
+    }
+
+    private var messageBarSettings: some View {
+        HStack(spacing: 16) {
+            messageBarToggle("Speak on tap", isOn: speakOnTapBinding, identifier: "speakOnTap")
+            messageBarToggle("Tap bar to speak", isOn: speakOnBarTapBinding, identifier: "speakOnBarTap")
+            messageBarToggle("Clear after speak", isOn: clearAfterSpeakBinding, identifier: "clearAfterSpeak")
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("messageBarSettings")
+    }
+
+    private func messageBarToggle(_ title: String, isOn: Binding<Bool>, identifier: String) -> some View {
+        Toggle(isOn: isOn) {
+            Text(title)
+                .font(.system(size: 14, weight: .heavy, design: .rounded))
+                .foregroundStyle(Theme.cream)
+        }
+        .tint(Theme.coral)
+        .accessibilityIdentifier(identifier)
+    }
+
+    private var speakOnTapBinding: Binding<Bool> {
+        Binding(
+            get: { store.messageBar.speakOnTap },
+            set: {
+                var next = store.messageBar
+                next.speakOnTap = $0
+                store.setMessageBar(next)
+            }
+        )
+    }
+
+    private var speakOnBarTapBinding: Binding<Bool> {
+        Binding(
+            get: { store.messageBar.speakOnBarTap },
+            set: {
+                var next = store.messageBar
+                next.speakOnBarTap = $0
+                store.setMessageBar(next)
+            }
+        )
+    }
+
+    private var clearAfterSpeakBinding: Binding<Bool> {
+        Binding(
+            get: { store.messageBar.clearAfterSpeak },
+            set: {
+                var next = store.messageBar
+                next.clearAfterSpeak = $0
+                store.setMessageBar(next)
+            }
+        )
     }
 
     /// Caregiver-only on-device mic. Kid mode never mounts this control.
@@ -680,13 +801,21 @@ struct ContentView: View {
 
     private var board: some View {
         ScrollView {
-            if store.showsEmptyBoard {
+            if store.showsEmptyBoard && !mode.isEditing {
                 emptyBoard
                     .padding(.top, 48)
+            } else if mode.showsSearchChrome && !store.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                LazyVGrid(columns: chrome.gridItems, spacing: chrome.gridSpacing) {
+                    ForEach(store.filteredCurrentItems) { item in
+                        boardCell(item)
+                    }
+                }
+                .padding(.horizontal, chrome.gridPadding)
+                .padding(.vertical, chrome.gridPadding + chrome.highlightStroke)
             } else {
                 LazyVGrid(columns: chrome.gridItems, spacing: chrome.gridSpacing) {
-                    ForEach(visibleBoardItems) { item in
-                        boardCell(item)
+                    ForEach(boardSlots) { slot in
+                        boardSlotCell(slot)
                     }
                 }
                 .padding(.horizontal, chrome.gridPadding)
@@ -694,6 +823,11 @@ struct ContentView: View {
             }
         }
         .refreshable { await store.refresh() }
+    }
+
+    /// Fixed row × column slots. Empty cells stay put so buttons never slide.
+    private var boardSlots: [BoardSlot] {
+        store.slots(rows: grid.rowCount, columns: grid.columnCount, editing: mode.isEditing)
     }
 
     /// Kid mode always shows the full current board. Caregiver search is a view over it.
@@ -798,7 +932,14 @@ struct ContentView: View {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(Theme.ink.opacity(0.22), lineWidth: 3)
             )
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if store.messageBar.speakOnBarTap, !store.strip.isEmpty {
+                    store.speakStrip()
+                }
+            }
             .accessibilityIdentifier("sentenceStrip")
+            .accessibilityHint("Tap to speak the sentence")
 
             Button {
                 store.backspaceStrip()
@@ -899,8 +1040,57 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    private func boardCell(_ item: BoardItem) -> some View {
+    private func boardSlotCell(_ slot: BoardSlot) -> some View {
+        switch slot {
+        case .empty(let coord):
+            emptyCell(at: coord)
+        case .hidden(let item, let coord):
+            boardCell(item, at: coord, dimmed: true)
+        case .item(let item, let coord):
+            boardCell(item, at: coord, dimmed: false)
+        }
+    }
+
+    private func emptyCell(at coord: GridCoord) -> some View {
+        let canAdd = mode.isEditing
+        return Button {
+            if canAdd {
+                editorDraft = store.draftForNewButton(at: coord)
+            }
+        } label: {
+            RoundedRectangle(cornerRadius: chrome.isCompact ? 16 : 22, style: .continuous)
+                .stroke(Theme.ink.opacity(canAdd ? 0.35 : 0.12), style: StrokeStyle(lineWidth: canAdd ? 3 : 1, dash: [8, 6]))
+                .background(
+                    RoundedRectangle(cornerRadius: chrome.isCompact ? 16 : 22, style: .continuous)
+                        .fill(canAdd ? Theme.cream.opacity(0.35) : Color.clear)
+                )
+                .overlay {
+                    if canAdd {
+                        VStack(spacing: 6) {
+                            Image(systemName: "plus")
+                                .font(.system(size: chrome.isCompact ? 22 : 28, weight: .bold))
+                            Text("Add")
+                                .font(.system(size: chrome.isCompact ? 14 : 18, weight: .heavy, design: .rounded))
+                        }
+                        .foregroundStyle(Theme.ink.opacity(0.45))
+                    }
+                }
+                .aspectRatio(0.82, contentMode: .fit)
+        }
+        .buttonStyle(.plain)
+        .disabled(!canAdd)
+        .accessibilityLabel("Add button")
+        .accessibilityHint("Adds a button in this cell")
+        .accessibilityIdentifier("emptyCell-\(coord.row)-\(coord.col)")
+        .allowsHitTesting(canAdd)
+    }
+
+    @ViewBuilder
+    private func boardCell(_ item: BoardItem, at coord: GridCoord? = nil, dimmed: Bool = false) -> some View {
         let label = store.displayLabel(for: item)
+        let style = store.style(for: item)
+        let background = Color(hex: style.backgroundHex) ?? Theme.cream
+        let border = Color(hex: style.borderHex) ?? Theme.cardStroke
         switch item {
         case .word(let card):
             ZStack(alignment: .topTrailing) {
@@ -910,19 +1100,13 @@ struct ContentView: View {
                     image: store.image(for: card),
                     remoteURL: store.remoteImageURL(for: card),
                     revision: store.imageRevision[card.slug, default: 0],
-                    highlighted: store.lastSpokenSlug == card.slug
+                    highlighted: store.lastSpokenSlug == card.slug,
+                    backgroundColor: background,
+                    borderColor: border
                 )
-                if mode.showsEditChrome {
-                    editChrome(for: item, label: label)
-                }
             }
-            .overlay(alignment: .topLeading) {
-                if mode.showsEditChrome {
-                    dragHandle(itemID: item.id)
-                        .padding(12)
-                }
-            }
-            .onTapGesture { store.select(item) }
+            .opacity(dimmed ? 0.45 : 1)
+            .onTapGesture { handleBoardTap(item, at: coord) }
             .modifier(BoardReorderSupport(
                 itemID: item.id,
                 enabled: mode.showsEditChrome,
@@ -939,23 +1123,13 @@ struct ContentView: View {
                     label: label,
                     image: store.image(for: folder),
                     remoteURL: store.remoteImageURL(for: folder),
-                    revision: store.imageRevision[folder.id, default: 0]
+                    revision: store.imageRevision[folder.id, default: 0],
+                    backgroundColor: background,
+                    borderColor: border
                 )
-                if mode.showsEditChrome {
-                    editChrome(for: item, label: label)
-                }
             }
-            .overlay(alignment: .topLeading) {
-                if mode.showsEditChrome {
-                    dragHandle(itemID: item.id)
-                        .padding(.leading, 12)
-                        .padding(.top, 52)
-                }
-            }
-            .onTapGesture {
-                store.select(item)
-                Task { await store.refresh() }
-            }
+            .opacity(dimmed ? 0.45 : 1)
+            .onTapGesture { handleBoardTap(item, at: coord) }
             .modifier(BoardReorderSupport(
                 itemID: item.id,
                 enabled: mode.showsEditChrome,
@@ -1055,6 +1229,69 @@ struct ContentView: View {
         return "Ask a grown-up to add a word.\nHope's Voice will make the picture and the voice."
     }
 
+    private func lockEditing() {
+        fieldFocused = false
+        searchFieldFocused = false
+        draft = ""
+        store.setSearchQuery("")
+        showingHidden = false
+        pendingHide = nil
+        editorDraft = nil
+        pendingVoiceWord = nil
+        voice.cancel()
+        mode.lock()
+    }
+
+    private func openNewButtonEditor() {
+        let coord = store.firstEmptyCoord(rows: grid.rowCount, columns: grid.columnCount)
+            ?? GridCoord(row: grid.rowCount, col: 0)
+        editorDraft = store.draftForNewButton(at: coord)
+        if !mode.isEditing {
+            mode.enterEdit()
+        }
+    }
+
+    private func handleBoardTap(_ item: BoardItem, at coord: GridCoord?) {
+        if mode.isEditing {
+            let at = coord ?? GridCoord(row: 0, col: 0)
+            editorDraft = store.draftForExisting(item, at: at)
+            return
+        }
+        store.select(item)
+        if case .folder = item {
+            Task { await store.refresh() }
+        }
+    }
+
+    private func saveEditor() async {
+        guard let draft = editorDraft, draft.canSave else { return }
+        editorBusy = true
+        defer { editorBusy = false }
+        if await store.saveEditorDraft(draft) != nil {
+            editorDraft = nil
+        }
+    }
+
+    private func hideEditorItem() {
+        guard let draft = editorDraft, let existingID = draft.existingID else { return }
+        if existingID.hasPrefix("folder:") { return }
+        if let card = store.cards.first(where: { $0.slug == existingID }) {
+            editorDraft = nil
+            pendingHide = card
+        }
+    }
+
+    private func deleteEditorItem() {
+        guard let draft = editorDraft, let existingID = draft.existingID else { return }
+        editorDraft = nil
+        if existingID.hasPrefix("folder:") {
+            let id = String(existingID.dropFirst("folder:".count))
+            pendingDeleteFolder = store.grouping.folder(id: id)
+        } else if let card = store.cards.first(where: { $0.slug == existingID }) {
+            pendingDelete = card
+        }
+    }
+
     private var canAdd: Bool {
         !store.isAdding && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -1075,6 +1312,7 @@ struct ContentView: View {
 
     private func consumeLaunchArguments() {
         let args = ProcessInfo.processInfo.arguments
+        grid.applySizeClassDefaultsIfNeeded(isCompact: horizontalSizeClass == .compact)
         mode.applyLaunchArguments(args)
         profiles.applyLaunchArguments(args, overlay: store, grid: grid)
         grid.applyLaunchArguments(args)
@@ -1428,6 +1666,8 @@ struct FolderCell: View {
     var image: UIImage? = nil
     var remoteURL: URL? = nil
     var revision: Int = 0
+    var backgroundColor: Color? = nil
+    var borderColor: Color? = nil
     @Environment(\.boardChrome) private var chrome
 
     private var shown: String { label ?? folder.name }
@@ -1455,7 +1695,7 @@ struct FolderCell: View {
             }
             .aspectRatio(1, contentMode: .fit)
             .frame(maxWidth: .infinity)
-            .background(Theme.cream)
+            .background(backgroundColor ?? Theme.cream)
 
             Text(shown)
                 .font(.system(size: chrome.cellTitleSize, weight: .heavy, design: .rounded))
@@ -1470,7 +1710,7 @@ struct FolderCell: View {
         .clipShape(RoundedRectangle(cornerRadius: chrome.isCompact ? 16 : 22, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: chrome.isCompact ? 16 : 22, style: .continuous)
-                .stroke(Theme.cardStroke, lineWidth: chrome.isCompact ? 3 : 5)
+                .stroke(borderColor ?? Theme.cardStroke, lineWidth: chrome.isCompact ? 3 : 5)
         )
         .shadow(color: .black.opacity(0.18), radius: 6, y: 5)
         .id("folder-\(folder.id)-\(revision)")
@@ -1491,6 +1731,8 @@ struct CardCell: View {
     let remoteURL: URL?
     let revision: Int
     let highlighted: Bool
+    var backgroundColor: Color? = nil
+    var borderColor: Color? = nil
     @Environment(\.boardChrome) private var chrome
 
     private var shown: String { label ?? card.word }
@@ -1500,7 +1742,7 @@ struct CardCell: View {
             PecsImageView(image: image, remoteURL: remoteURL, placeholderSize: 36)
                 .aspectRatio(1, contentMode: .fit)
                 .frame(maxWidth: .infinity)
-                .background(Theme.cream)
+                .background((backgroundColor ?? Theme.cream))
 
             Text(shown)
                 .font(.system(size: chrome.cellTitleSize, weight: .heavy, design: .rounded))
@@ -1516,7 +1758,7 @@ struct CardCell: View {
         .overlay(
             RoundedRectangle(cornerRadius: chrome.isCompact ? 16 : 22, style: .continuous)
                 .stroke(
-                    highlighted ? Theme.coral : Theme.cardStroke,
+                    highlighted ? Theme.coral : (borderColor ?? Theme.cardStroke),
                     lineWidth: highlighted ? chrome.highlightStroke : (chrome.isCompact ? 3 : 5)
                 )
         )

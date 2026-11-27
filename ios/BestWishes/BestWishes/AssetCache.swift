@@ -54,6 +54,31 @@ final class AssetCache: Sendable {
         UIImage(contentsOfFile: imageURL(for: slug).path)
     }
 
+    func localImageMarkerURL(for slug: String) -> URL {
+        directory(for: slug).appendingPathComponent("image.local")
+    }
+
+    /// True when the caregiver chose an on-device photo. Remote fetches must not overwrite it.
+    func isLocalImage(_ slug: String) -> Bool {
+        fileManager.fileExists(atPath: localImageMarkerURL(for: slug).path)
+    }
+
+    /// Write a caregiver photo (or a trimmed generated replacement) and mark it on-device only.
+    @discardableResult
+    func saveLocalImage(_ image: UIImage, for slug: String) -> Bool {
+        guard let data = image.pngData() else { return false }
+        let dir = directory(for: slug)
+        try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+        do {
+            try data.write(to: imageURL(for: slug), options: .atomic)
+            try Data("local".utf8).write(to: localImageMarkerURL(for: slug), options: .atomic)
+            return true
+        } catch {
+            print("BestWishes: failed to save local image for \(slug): \(error)")
+            return false
+        }
+    }
+
     /// Wipe one slug's on-device picture and MP3. Used after a server Delete, not Hide.
     func removeAssets(for slug: String) {
         let dir = directory(for: slug)
@@ -187,6 +212,81 @@ final class AssetCache: Sendable {
         root.appendingPathComponent("labels-\(profile.fileKey).json")
     }
 
+    func savePositionOverlays(_ overlays: [String: [String: GridCoord]], for profile: KidProfile) {
+        do {
+            let data = try JSONEncoder().encode(overlays)
+            try data.write(to: positionsFileURL(for: profile), options: .atomic)
+        } catch {
+            print("BestWishes: failed to persist positions: \(error)")
+        }
+    }
+
+    func loadPositionOverlays(for profile: KidProfile) -> [String: [String: GridCoord]] {
+        guard let data = try? Data(contentsOf: positionsFileURL(for: profile)) else { return [:] }
+        return (try? JSONDecoder().decode([String: [String: GridCoord]].self, from: data)) ?? [:]
+    }
+
+    func positionsFileURL(for profile: KidProfile) -> URL {
+        root.appendingPathComponent("positions-\(profile.fileKey).json")
+    }
+
+    func saveSpeakOverlays(_ overlays: [String: String], for profile: KidProfile) {
+        do {
+            let data = try JSONEncoder().encode(overlays)
+            try data.write(to: speakFileURL(for: profile), options: .atomic)
+        } catch {
+            print("BestWishes: failed to persist speak overlay: \(error)")
+        }
+    }
+
+    func loadSpeakOverlays(for profile: KidProfile) -> [String: String] {
+        guard let data = try? Data(contentsOf: speakFileURL(for: profile)) else { return [:] }
+        return (try? JSONDecoder().decode([String: String].self, from: data)) ?? [:]
+    }
+
+    func speakFileURL(for profile: KidProfile) -> URL {
+        root.appendingPathComponent("speak-\(profile.fileKey).json")
+    }
+
+    func saveStyleOverlays(_ overlays: [String: CellStyle], for profile: KidProfile) {
+        do {
+            let data = try JSONEncoder().encode(overlays)
+            try data.write(to: stylesFileURL(for: profile), options: .atomic)
+        } catch {
+            print("BestWishes: failed to persist style overlay: \(error)")
+        }
+    }
+
+    func loadStyleOverlays(for profile: KidProfile) -> [String: CellStyle] {
+        guard let data = try? Data(contentsOf: stylesFileURL(for: profile)) else { return [:] }
+        return (try? JSONDecoder().decode([String: CellStyle].self, from: data)) ?? [:]
+    }
+
+    func stylesFileURL(for profile: KidProfile) -> URL {
+        root.appendingPathComponent("styles-\(profile.fileKey).json")
+    }
+
+    func saveMessageBarSettings(_ settings: MessageBarSettings, for profile: KidProfile) {
+        do {
+            let data = try JSONEncoder().encode(settings)
+            try data.write(to: messageBarFileURL(for: profile), options: .atomic)
+        } catch {
+            print("BestWishes: failed to persist message bar settings: \(error)")
+        }
+    }
+
+    func loadMessageBarSettings(for profile: KidProfile) -> MessageBarSettings {
+        guard let data = try? Data(contentsOf: messageBarFileURL(for: profile)),
+              let settings = try? JSONDecoder().decode(MessageBarSettings.self, from: data) else {
+            return .default
+        }
+        return settings
+    }
+
+    func messageBarFileURL(for profile: KidProfile) -> URL {
+        root.appendingPathComponent("message-bar-\(profile.fileKey).json")
+    }
+
     /// Last spoken slugs, most-recent-first, unique, capped at 8. Per profile.
     func saveRecents(_ slugs: [String], for profile: KidProfile) {
         do {
@@ -214,7 +314,7 @@ final class AssetCache: Sendable {
 
     func ensureAssets(for card: Card, api: APIClient) async {
         await withTaskGroup(of: Void.self) { group in
-            if !hasImage(card.slug), let remote = api.absoluteURL(for: card.imageURL) {
+            if !isLocalImage(card.slug), !hasImage(card.slug), let remote = api.absoluteURL(for: card.imageURL) {
                 group.addTask {
                     do { try await api.download(remote, to: self.imageURL(for: card.slug)) }
                     catch { print("BestWishes: image cache failed for \(card.slug): \(error)") }

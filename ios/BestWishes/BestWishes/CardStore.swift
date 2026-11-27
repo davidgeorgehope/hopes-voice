@@ -15,6 +15,10 @@ final class CardStore {
     private(set) var orderOverlays: [String: [String]] = [:]
     /// Local overlay: display labels keyed by card slug or folder id.
     private(set) var labelOverlays: [String: String] = [:]
+    var positionOverlays: [String: [String: GridCoord]] = [:]
+    var speakOverlays: [String: String] = [:]
+    var styleOverlays: [String: CellStyle] = [:]
+    var messageBar: MessageBarSettings = .default
     /// Spoken slugs, most-recent-first, unique, capped at `recentsLimit`.
     private(set) var recentSlugs: [String] = []
     /// Folder ids from root to the open board. Empty means the root board.
@@ -128,6 +132,10 @@ final class CardStore {
         hiddenSlugs = cache.loadHiddenSlugs(for: profile)
         orderOverlays = cache.loadOrderOverlays(for: profile)
         labelOverlays = cache.loadLabelOverlays(for: profile)
+        positionOverlays = cache.loadPositionOverlays(for: profile)
+        speakOverlays = cache.loadSpeakOverlays(for: profile)
+        styleOverlays = cache.loadStyleOverlays(for: profile)
+        messageBar = cache.loadMessageBarSettings(for: profile)
         recentSlugs = cache.loadRecents(for: profile)
         folderPath = clampedFolderPath(cache.loadFolderPath(for: profile))
     }
@@ -141,6 +149,10 @@ final class CardStore {
         hiddenSlugs = cache.loadHiddenSlugs(for: profile)
         orderOverlays = cache.loadOrderOverlays(for: profile)
         labelOverlays = cache.loadLabelOverlays(for: profile)
+        positionOverlays = cache.loadPositionOverlays(for: profile)
+        speakOverlays = cache.loadSpeakOverlays(for: profile)
+        styleOverlays = cache.loadStyleOverlays(for: profile)
+        messageBar = cache.loadMessageBarSettings(for: profile)
         recentSlugs = cache.loadRecents(for: profile)
         folderPath = clampedFolderPath(cache.loadFolderPath(for: profile))
         strip.clear()
@@ -202,9 +214,10 @@ final class CardStore {
         }
     }
 
-    func addWord(_ raw: String) async {
+    @discardableResult
+    func addWord(_ raw: String) async -> Card? {
         let word = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !word.isEmpty else { return }
+        guard !word.isEmpty else { return nil }
         isAdding = true
         addingWord = word
         errorMessage = nil
@@ -221,15 +234,18 @@ final class CardStore {
             banner = "“\(card.word)” is on the board."
             preview(card)
             await refresh()
+            return card
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             banner = nil
+            return nil
         }
     }
 
-    func addFolder(_ raw: String) async {
+    @discardableResult
+    func addFolder(_ raw: String) async -> BoardFolder? {
         let name = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
+        guard !name.isEmpty else { return nil }
         isAdding = true
         errorMessage = nil
         banner = "Making a folder named “\(name)”…"
@@ -240,9 +256,11 @@ final class CardStore {
             persistSnapshot()
             banner = "Folder “\(folder.displayName)” is on the board."
             await refresh()
+            return folder.asFolder(parentId: folderPath.last)
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             banner = nil
+            return nil
         }
     }
 
@@ -288,7 +306,9 @@ final class CardStore {
 
     func tap(_ card: Card) {
         strip.append(card)
-        preview(card)
+        if messageBar.speakOnTap {
+            preview(card)
+        }
         recordSpoken(slugs: [card.slug])
     }
 
@@ -405,6 +425,15 @@ final class CardStore {
         guard let from = ids.firstIndex(of: id),
               ids.contains(targetId),
               id != targetId else { return }
+        let key = currentFolderKey
+        if var folderMap = positionOverlays[key],
+           let origin = folderMap[id],
+           let destCoord = folderMap[targetId] {
+            folderMap[id] = destCoord
+            folderMap[targetId] = origin
+            positionOverlays[key] = folderMap
+            persistPositions()
+        }
         ids.remove(at: from)
         let dest = ids.firstIndex(of: targetId) ?? ids.endIndex
         ids.insert(id, at: dest)
@@ -466,15 +495,19 @@ final class CardStore {
 
     func preview(_ card: Card) {
         lastSpokenSlug = card.slug
-        player.speak(card: card, cache: cache, api: api)
+        player.speak(card: card, spokenText: speakText(for: card), cache: cache, api: api)
         Task { await cache.ensureAssets(for: card, api: api) }
     }
 
     func speakStrip() {
         guard !strip.isEmpty else { return }
         lastSpokenSlug = strip.cards.first?.slug
-        player.speakSequence(strip.cards, cache: cache, api: api)
+        let texts = strip.cards.map { speakText(for: $0) }
+        player.speakSequence(strip.cards, spokenTexts: texts, cache: cache, api: api)
         recordSpoken(slugs: strip.cards.map(\.slug))
+        if messageBar.clearAfterSpeak {
+            clearStrip()
+        }
     }
 
     func backspaceStrip() {
@@ -625,7 +658,7 @@ final class CardStore {
 
     /// Membership of the open board after hide, before the order overlay.
     /// Default is folders first (name), then word cards.
-    private func membershipItems(parentId: String?) -> [BoardItem] {
+    func membershipItems(parentId: String?) -> [BoardItem] {
         let folderItems = grouping.folders(parentId: parentId).map { BoardItem.folder($0) }
         let wordItems: [BoardItem]
         if let parentId, let folder = grouping.folder(id: parentId) {
@@ -707,7 +740,7 @@ final class CardStore {
         return valid
     }
 
-    private func bumpImage(_ slug: String) {
+    func bumpImage(_ slug: String) {
         imageRevision[slug, default: 0] += 1
     }
 

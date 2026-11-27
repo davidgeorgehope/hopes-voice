@@ -18,17 +18,23 @@ final class SpeechPlayer: NSObject, AVAudioPlayerDelegate {
     /// Cached MP3 URLs requested for that sequence, same order.
     private(set) var lastSpeakAudioURLs: [URL] = []
 
-    func speak(card: Card, cache: AssetCache, api: APIClient) {
+    func speak(card: Card, spokenText: String? = nil, cache: AssetCache, api: APIClient) {
         prepareSession()
         stop()
         lastSpeakSequence = [card.slug]
         lastSpeakAudioURLs = [cache.audioURL(for: card.slug)]
+        if let spoken = Self.customSpeech(for: card, spokenText: spokenText) {
+            SpeakTrace.log("speak utterance slug=\(card.slug) word=\(card.word) text=\(spoken)")
+            speakFallback(spoken)
+            return
+        }
         SpeakTrace.log("speak slug=\(card.slug) word=\(card.word) audio=\(cache.audioURL(for: card.slug).path)")
         playNow(card: card, cache: cache, api: api)
     }
 
     /// Play each card's cached MP3 one after another. Does not concatenate a single phrase.
-    func speakSequence(_ cards: [Card], cache: AssetCache, api: APIClient) {
+    /// When `spokenTexts` differs from the card word, that item uses AVSpeech instead of the MP3.
+    func speakSequence(_ cards: [Card], spokenTexts: [String]? = nil, cache: AssetCache, api: APIClient) {
         prepareSession()
         stop()
         let token = playbackToken
@@ -42,6 +48,14 @@ final class SpeechPlayer: NSObject, AVAudioPlayerDelegate {
         Task { @MainActor in
             for (index, card) in cards.enumerated() {
                 guard playbackToken == token else { return }
+                let spoken = spokenTexts.flatMap { $0.indices.contains(index) ? Self.customSpeech(for: card, spokenText: $0[index]) : nil }
+                if let spoken {
+                    SpeakTrace.log("speak-strip utterance [\(index + 1)/\(cards.count)] slug=\(card.slug) text=\(spoken)")
+                    speakFallback(spoken)
+                    let wait = max(0.6, Double(spoken.count) * 0.07)
+                    try? await Task.sleep(for: .seconds(wait))
+                    continue
+                }
                 let audio = cache.audioURL(for: card.slug)
                 SpeakTrace.log("speak-strip play [\(index + 1)/\(cards.count)] slug=\(card.slug) word=\(card.word) audio=\(audio.path)")
                 await playAndWait(card: card, cache: cache, api: api, token: token)
@@ -50,6 +64,17 @@ final class SpeechPlayer: NSObject, AVAudioPlayerDelegate {
                 SpeakTrace.log("speak-strip done")
             }
         }
+    }
+
+    /// Spoken text that should replace the cached MP3. Nil means play the recording.
+    static func customSpeech(for card: Card, spokenText: String?) -> String? {
+        guard let spoken = spokenText?.trimmingCharacters(in: .whitespacesAndNewlines), !spoken.isEmpty else {
+            return nil
+        }
+        if spoken.caseInsensitiveCompare(card.word) == .orderedSame {
+            return nil
+        }
+        return spoken
     }
 
     func stop() {
