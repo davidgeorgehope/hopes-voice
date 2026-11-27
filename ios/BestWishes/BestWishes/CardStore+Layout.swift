@@ -33,6 +33,9 @@ extension CardStore {
     /// `rows`/`columns` are the caregiver-configured size; extra rows are added if a
     /// saved position would otherwise fall off the board.
     func slots(rows: Int, columns: Int, editing: Bool) -> [BoardSlot] {
+        if let imported = slotsFromImport(rows: rows, columns: columns, editing: editing) {
+            return imported
+        }
         let columns = max(columns, 1)
         let rows = max(rows, 1)
         var placed = placements(columns: columns)
@@ -219,7 +222,7 @@ extension CardStore {
         }
     }
 
-    private func editorSlug(_ itemID: String) -> String {
+    func editorSlug(_ itemID: String) -> String {
         if itemID.hasPrefix("folder:") {
             return String(itemID.dropFirst("folder:".count))
         }

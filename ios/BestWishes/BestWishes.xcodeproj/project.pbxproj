@@ -20,6 +20,11 @@
 		A10000000000000000000030 /* MessageBarSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000030 /* MessageBarSettings.swift */; };
 		A10000000000000000000031 /* CardStore+Layout.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000031 /* CardStore+Layout.swift */; };
 		A10000000000000000000032 /* EditWorkflowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000032 /* EditWorkflowTests.swift */; };
+		A10000000000000000000033 /* BoardImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000033 /* BoardImport.swift */; };
+		A10000000000000000000034 /* ProfileSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000034 /* ProfileSettings.swift */; };
+		A10000000000000000000035 /* CardStore+Import.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000035 /* CardStore+Import.swift */; };
+		A10000000000000000000036 /* BoardSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000036 /* BoardSettingsSheet.swift */; };
+		A10000000000000000000037 /* BoardImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000037 /* BoardImportTests.swift */; };
 		A10000000000000000000004 /* Card.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* Card.swift */; };
 		A10000000000000000000005 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* APIClient.swift */; };
 		A10000000000000000000006 /* AssetCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* AssetCache.swift */; };
@@ -75,6 +80,11 @@
 		A20000000000000000000030 /* MessageBarSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBarSettings.swift; sourceTree = "<group>"; };
 		A20000000000000000000031 /* CardStore+Layout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CardStore+Layout.swift"; sourceTree = "<group>"; };
 		A20000000000000000000032 /* EditWorkflowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditWorkflowTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000033 /* BoardImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardImport.swift; sourceTree = "<group>"; };
+		A20000000000000000000034 /* ProfileSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSettings.swift; sourceTree = "<group>"; };
+		A20000000000000000000035 /* CardStore+Import.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CardStore+Import.swift"; sourceTree = "<group>"; };
+		A20000000000000000000036 /* BoardSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardSettingsSheet.swift; sourceTree = "<group>"; };
+		A20000000000000000000037 /* BoardImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardImportTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000004 /* Card.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Card.swift; sourceTree = "<group>"; };
 		A20000000000000000000005 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		A20000000000000000000006 /* AssetCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetCache.swift; sourceTree = "<group>"; };
@@ -151,6 +161,10 @@
 				A20000000000000000000029 /* ButtonEditor.swift */,
 				A20000000000000000000030 /* MessageBarSettings.swift */,
 				A20000000000000000000031 /* CardStore+Layout.swift */,
+				A20000000000000000000033 /* BoardImport.swift */,
+				A20000000000000000000034 /* ProfileSettings.swift */,
+				A20000000000000000000035 /* CardStore+Import.swift */,
+				A20000000000000000000036 /* BoardSettingsSheet.swift */,
 				A20000000000000000000004 /* Card.swift */,
 				A20000000000000000000005 /* APIClient.swift */,
 				A20000000000000000000006 /* AssetCache.swift */,
@@ -194,6 +208,7 @@
 				A20000000000000000000025 /* PecsImageTests.swift */,
 				A20000000000000000000026 /* BoardChromeTests.swift */,
 				A20000000000000000000032 /* EditWorkflowTests.swift */,
+				A20000000000000000000037 /* BoardImportTests.swift */,
 				A20000000000000000000010 /* CaregiverModeTests.swift */,
 				A20000000000000000000012 /* FolderNavigationTests.swift */,
 				A20000000000000000000013 /* EditBoardTests.swift */,
@@ -319,6 +334,10 @@
 				A10000000000000000000029 /* ButtonEditor.swift in Sources */,
 				A10000000000000000000030 /* MessageBarSettings.swift in Sources */,
 				A10000000000000000000031 /* CardStore+Layout.swift in Sources */,
+				A10000000000000000000033 /* BoardImport.swift in Sources */,
+				A10000000000000000000034 /* ProfileSettings.swift in Sources */,
+				A10000000000000000000035 /* CardStore+Import.swift in Sources */,
+				A10000000000000000000036 /* BoardSettingsSheet.swift in Sources */,
 				A10000000000000000000004 /* Card.swift in Sources */,
 				A10000000000000000000005 /* APIClient.swift in Sources */,
 				A10000000000000000000006 /* AssetCache.swift in Sources */,
@@ -343,6 +362,7 @@
 				A10000000000000000000025 /* PecsImageTests.swift in Sources */,
 				A10000000000000000000026 /* BoardChromeTests.swift in Sources */,
 				A10000000000000000000032 /* EditWorkflowTests.swift in Sources */,
+				A10000000000000000000037 /* BoardImportTests.swift in Sources */,
 				A1000000000000000000000E /* CaregiverModeTests.swift in Sources */,
 				A10000000000000000000011 /* FolderNavigationTests.swift in Sources */,
 				A10000000000000000000012 /* EditBoardTests.swift in Sources */,

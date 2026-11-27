@@ -17,6 +17,8 @@ final class SpeechPlayer: NSObject, AVAudioPlayerDelegate {
     private(set) var lastSpeakSequence: [String] = []
     /// Cached MP3 URLs requested for that sequence, same order.
     private(set) var lastSpeakAudioURLs: [URL] = []
+    /// On-device voice used when spoken text differs from the cached MP3, or when there is no MP3.
+    var voiceSettings: BoardImportVoice = .default
 
     func speak(card: Card, spokenText: String? = nil, cache: AssetCache, api: APIClient) {
         prepareSession()
@@ -169,9 +171,14 @@ final class SpeechPlayer: NSObject, AVAudioPlayerDelegate {
 
     private func speakFallback(_ word: String) {
         let utterance = AVSpeechUtterance(string: word)
-        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-        utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.92
-        utterance.pitchMultiplier = 1.05
+        if let voice = AVSpeechSynthesisVoice(identifier: voiceSettings.voiceId) {
+            utterance.voice = voice
+        } else {
+            utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+        }
+        let rate = max(0.1, min(voiceSettings.rate, 2.0))
+        utterance.rate = AVSpeechUtteranceDefaultSpeechRate * (0.92 * Float(rate))
+        utterance.pitchMultiplier = Float(max(0.5, min(voiceSettings.pitch, 2.0))) * 1.05
         synthesizer.speak(utterance)
     }
 

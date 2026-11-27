@@ -18,6 +18,10 @@ struct ContentView: View {
     @State private var showingHidden = false
     @State private var editorDraft: ButtonEditorDraft?
     @State private var editorBusy = false
+    @State private var showingSettings = false
+    @State private var showingImporter = false
+    @State private var importError: String?
+    @State private var boardPage = 0
     @FocusState private var fieldFocused: Bool
     @FocusState private var searchFieldFocused: Bool
     @State private var voice = VoiceRecognizer()
@@ -93,7 +97,30 @@ struct ContentView: View {
                 board
             }
         }
-        .background(Theme.board.ignoresSafeArea())
+        .background((Color(hex: store.settings.backgroundHex) ?? Theme.board).ignoresSafeArea())
+        .sheet(isPresented: $showingSettings) {
+            BoardSettingsSheet(
+                store: store,
+                grid: grid,
+                onDismiss: { showingSettings = false },
+                onImport: {
+                    showingSettings = false
+                    showingImporter = true
+                }
+            )
+        }
+        .fileImporter(
+            isPresented: $showingImporter,
+            allowedContentTypes: [.json, .folder],
+            allowsMultipleSelection: false
+        ) { result in
+            handleImportResult(result)
+        }
+        .alert("Could not import that board", isPresented: importErrorPresented) {
+            Button("OK", role: .cancel) { importError = nil }
+        } message: {
+            Text(importError ?? "")
+        }
         .background(
             GeometryReader { geo in
                 Color.clear.preference(key: BoardWidthPreference.self, value: geo.size.width)
@@ -261,6 +288,18 @@ struct ContentView: View {
                 folderNav
                 title
                 Spacer(minLength: 4)
+                if mode.showsAddChrome {
+                    Button {
+                        showingSettings = true
+                    } label: {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: chrome.isCompact ? 16 : 18, weight: .bold))
+                            .foregroundStyle(Theme.cream)
+                            .frame(minWidth: chrome.isCompact ? 44 : 52, minHeight: chrome.isCompact ? 44 : 52)
+                    }
+                    .accessibilityLabel("Settings")
+                    .accessibilityIdentifier("boardSettings")
+                }
                 EditLockButton(mode: mode, isCompact: chrome.isCompact, onLock: lockEditing)
             }
             if mode.showsProfileSwitcher {
@@ -812,6 +851,8 @@ struct ContentView: View {
                 }
                 .padding(.horizontal, chrome.gridPadding)
                 .padding(.vertical, chrome.gridPadding + chrome.highlightStroke)
+            } else if store.hasImportedBoard, store.importedPageCount > 1 {
+                pagedBoard
             } else {
                 LazyVGrid(columns: chrome.gridItems, spacing: chrome.gridSpacing) {
                     ForEach(boardSlots) { slot in
@@ -825,9 +866,37 @@ struct ContentView: View {
         .refreshable { await store.refresh() }
     }
 
+    private var pagedBoard: some View {
+        let pages = store.importedPageCount
+        let rowsPerPage = viewportRows
+        return TabView(selection: $boardPage) {
+            ForEach(0..<pages, id: \.self) { page in
+                let pageSlots = boardSlots.filter { $0.coord.row >= page * rowsPerPage && $0.coord.row < (page + 1) * rowsPerPage }
+                LazyVGrid(columns: chrome.gridItems, spacing: chrome.gridSpacing) {
+                    ForEach(pageSlots) { slot in
+                        boardSlotCell(slot)
+                    }
+                }
+                .padding(.horizontal, chrome.gridPadding)
+                .padding(.vertical, chrome.gridPadding + chrome.highlightStroke)
+                .tag(page)
+            }
+        }
+        .tabViewStyle(.page(indexDisplayMode: .automatic))
+        .onChange(of: store.currentFolderName) { _, _ in boardPage = 0 }
+    }
+
     /// Fixed row × column slots. Empty cells stay put so buttons never slide.
     private var boardSlots: [BoardSlot] {
-        store.slots(rows: grid.rowCount, columns: grid.columnCount, editing: mode.isEditing)
+        store.slots(
+            rows: store.importedBoardRows ?? grid.rowCount,
+            columns: store.importedBoardCols ?? grid.columnCount,
+            editing: mode.isEditing
+        )
+    }
+
+    private var viewportRows: Int {
+        max(store.hasImportedBoard ? store.settings.viewportRows : grid.rowCount, 1)
     }
 
     /// Kid mode always shows the full current board. Caregiver search is a view over it.
@@ -868,7 +937,11 @@ struct ContentView: View {
         .padding(.bottom, 80)
     }
 
+    @ViewBuilder
     private var sentenceStrip: some View {
+        if store.messageBar.style == "compactBlue" {
+            compactMessageBar
+        } else {
         HStack(alignment: .center, spacing: chrome.stripSpacing) {
             Button {
                 store.speakStrip()
@@ -988,6 +1061,70 @@ struct ContentView: View {
         .padding(.horizontal, chrome.stripPadding)
         .padding(.vertical, chrome.stripVerticalPadding)
         .background(Theme.board)
+        }
+    }
+
+    private var compactMessageBar: some View {
+        let barColor = Color(hex: store.messageBar.backgroundHex ?? "0000CB") ?? Color(red: 0, green: 0, blue: 0.8)
+        return HStack(spacing: 8) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .bottom, spacing: 10) {
+                    if store.strip.isEmpty {
+                        Text(" ")
+                            .frame(minHeight: 52)
+                    } else {
+                        ForEach(store.strip.chips) { chip in
+                            VStack(spacing: 2) {
+                                Text(store.displayLabel(for: chip.card))
+                                    .font(.system(size: 13, weight: .bold, design: .serif).italic())
+                                    .foregroundStyle(Color(white: 0.82))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.6)
+                                if let image = store.image(for: chip.card) {
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 36, height: 28)
+                                        .clipped()
+                                } else {
+                                    Color.white.opacity(0.15)
+                                        .frame(width: 36, height: 28)
+                                }
+                            }
+                            .id(chip.id)
+                        }
+                    }
+                }
+                .padding(.horizontal, 8)
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if store.messageBar.speakOnBarTap, !store.strip.isEmpty {
+                    store.speakStrip()
+                }
+            }
+            .accessibilityIdentifier("sentenceStrip")
+            .accessibilityHint("Tap to speak the sentence")
+
+            if store.messageBar.showDeleteLast {
+                Button {
+                    store.backspaceStrip()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color.white)
+                        .frame(width: 30, height: 30)
+                        .background(Circle().fill(Color.black))
+                }
+                .disabled(store.strip.isEmpty)
+                .accessibilityIdentifier("backspaceSentence")
+                .accessibilityLabel("Delete last")
+                .padding(.trailing, 8)
+            }
+        }
+        .frame(height: 57)
+        .background(barColor)
     }
 
     private var hiddenList: some View {
@@ -1310,12 +1447,66 @@ struct ContentView: View {
         await store.addFolder(name)
     }
 
+    private var importErrorPresented: Binding<Bool> {
+        Binding(
+            get: { importError != nil },
+            set: { if !$0 { importError = nil } }
+        )
+    }
+
+    private func handleImportResult(_ result: Result<[URL], Error>) {
+        switch result {
+        case .failure(let error):
+            importError = error.localizedDescription
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            let access = url.startAccessingSecurityScopedResource()
+            defer { if access { url.stopAccessingSecurityScopedResource() } }
+            var file = url
+            var isDirectory: ObjCBool = false
+            if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue {
+                if let found = findBoardFile(in: url) {
+                    file = found
+                } else {
+                    importError = "That folder does not contain a bestwishes.board/v1 JSON file."
+                    return
+                }
+            }
+            importBoard(from: file)
+        }
+    }
+
+    private func findBoardFile(in directory: URL) -> URL? {
+        let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
+        let json = files.filter { $0.pathExtension.lowercased() == "json" }
+        return json.first(where: { $0.lastPathComponent.contains("bestwishes") }) ?? json.first
+    }
+
+    private func importBoard(from url: URL) {
+        do {
+            try store.importBoard(from: url)
+            if let cols = store.importedBoardCols {
+                grid.setColumnCount(cols)
+            }
+            boardPage = 0
+            store.banner = "Imported \(store.importedDocument?.boards.count ?? 0) boards."
+        } catch {
+            importError = error.localizedDescription
+        }
+    }
+
     private func consumeLaunchArguments() {
         let args = ProcessInfo.processInfo.arguments
         grid.applySizeClassDefaultsIfNeeded(isCompact: horizontalSizeClass == .compact)
         mode.applyLaunchArguments(args)
         profiles.applyLaunchArguments(args, overlay: store, grid: grid)
         grid.applyLaunchArguments(args)
+        if let idx = args.firstIndex(of: "-ImportBoard"), args.indices.contains(idx + 1) {
+            let path = args[idx + 1]
+            Task { @MainActor in
+                importBoard(from: URL(fileURLWithPath: path))
+            }
+        }
         if let idx = args.firstIndex(of: "-AddWord"), args.indices.contains(idx + 1) {
             let word = args[idx + 1]
             Task { await store.addWord(word) }

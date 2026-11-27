@@ -345,4 +345,63 @@ final class AssetCache: Sendable {
     private static func boardKey(_ folderId: String?) -> String {
         folderId ?? ""
     }
+
+    func importedBoardFileURL(for profile: KidProfile) -> URL {
+        root.appendingPathComponent("import-\(profile.fileKey).json")
+    }
+
+    func importedImagesDirectory(for profile: KidProfile) -> URL {
+        let url = root.appendingPathComponent("import-images-\(profile.fileKey)", isDirectory: true)
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }
+
+    func saveImportedBoard(_ data: Data, for profile: KidProfile) {
+        do {
+            try data.write(to: importedBoardFileURL(for: profile), options: .atomic)
+        } catch {
+            print("BestWishes: failed to persist imported board: \(error)")
+        }
+    }
+
+    func loadImportedBoard(for profile: KidProfile) -> Data? {
+        try? Data(contentsOf: importedBoardFileURL(for: profile))
+    }
+
+    func clearImportedBoard(for profile: KidProfile) {
+        try? FileManager.default.removeItem(at: importedBoardFileURL(for: profile))
+        try? FileManager.default.removeItem(at: importedImagesDirectory(for: profile))
+    }
+
+    func saveProfileSettings(_ settings: ProfileSettings, for profile: KidProfile) {
+        do {
+            let data = try JSONEncoder().encode(settings)
+            try data.write(to: profileSettingsFileURL(for: profile), options: .atomic)
+        } catch {
+            print("BestWishes: failed to persist profile settings: \(error)")
+        }
+    }
+
+    func loadProfileSettings(for profile: KidProfile) -> ProfileSettings {
+        guard let data = try? Data(contentsOf: profileSettingsFileURL(for: profile)),
+              let settings = try? JSONDecoder().decode(ProfileSettings.self, from: data) else {
+            return .default
+        }
+        return settings
+    }
+
+    func profileSettingsFileURL(for profile: KidProfile) -> URL {
+        root.appendingPathComponent("settings-\(profile.fileKey).json")
+    }
+
+    /// Copy a private import image into the on-device cache. The source path is never uploaded.
+    @discardableResult
+    func importLocalImage(from source: URL, for slug: String) -> Bool {
+        guard let image = UIImage(contentsOfFile: source.path) ?? loadHeic(source) else { return false }
+        return saveLocalImage(image, for: slug)
+    }
+
+    private func loadHeic(_ url: URL) -> UIImage? {
+        UIImage(contentsOfFile: url.path)
+    }
 }
