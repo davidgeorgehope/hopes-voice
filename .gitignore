@@ -1,0 +1,49 @@
+# Secrets — never commit real keys or env files
+.env
+*.env
+!.env.example
+
+# Generated card assets (pictures, audio, board JSON)
+data/
+backend/data/
+
+# Private family boards, photos, and import files
+private/
+*.private.json
+imports/
+
+# Screenshots may show profile names; keep them out of git
+screenshots/
+
+# Xcode / iOS
+.DS_Store
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+.swiftpm/
+*.xcarchive
+
+# Android
+.idea/
+.gradle/
+local.properties
+*.iml
+*.apk
+*.aab
+.cxx/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Editor
+*.swp
+.vscode/
