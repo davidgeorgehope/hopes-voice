@@ -126,4 +126,26 @@ final class CaregiverModeTests: XCTestCase {
         XCTAssertFalse(mode.showsEditChrome)
         XCTAssertFalse(mode.showsEditButton)
     }
+
+    func testUnlockAndEditEntersEditInOneStep() {
+        let mode = CaregiverMode(defaults: defaults)
+        XCTAssertFalse(mode.isCaregiver)
+        XCTAssertFalse(mode.isEditing)
+
+        mode.unlockAndEdit()
+
+        XCTAssertTrue(mode.isCaregiver)
+        XCTAssertTrue(mode.isEditing)
+        XCTAssertTrue(mode.showsEditChrome)
+        XCTAssertTrue(mode.showsAddChrome)
+        XCTAssertTrue(defaults.bool(forKey: CaregiverMode.defaultsKey))
+    }
+
+    func testUnlockAloneDoesNotEnterEdit() {
+        let mode = CaregiverMode(defaults: defaults)
+        mode.unlock()
+        XCTAssertTrue(mode.isCaregiver)
+        XCTAssertFalse(mode.isEditing)
+        XCTAssertFalse(mode.showsEditChrome)
+    }
 }

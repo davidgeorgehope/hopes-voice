@@ -39,10 +39,17 @@ final class CaregiverMode {
         self.isCaregiver = defaults.bool(forKey: Self.defaultsKey)
     }
 
-    /// Same path the title long-press uses.
+    /// Unlock caregiver tools without entering Edit. Used by the `-CaregiverMode` launch arg.
     func unlock() {
         isCaregiver = true
         defaults.set(true, forKey: Self.defaultsKey)
+    }
+
+    /// Main P2G-style path: unlock caregiver tools and go straight into Edit.
+    /// Used by the toolbar hold-to-edit control and the title long-press.
+    func unlockAndEdit() {
+        unlock()
+        enterEdit()
     }
 
     /// Same path the Lock control uses. Kid mode always leaves Edit.

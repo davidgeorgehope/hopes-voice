@@ -54,17 +54,17 @@ final class GridLayoutTests: XCTestCase {
         XCTAssertEqual(layout.gridItems.count, 2)
     }
 
-    func testValuesOutsideTwoThreeFourDoNotProduceFifthDensity() {
+    func testValuesOutsideAllowedRangeCollapseToDefaultDensity() {
         let layout = GridLayout(defaults: defaults)
 
-        for invalid in [0, 1, 5, 6, -1, 99] {
+        for invalid in [0, 1, 9, 99, -1] {
             layout.setColumnCount(invalid)
 
             XCTAssertTrue(
-                GridLayout.allowedCounts.contains(layout.columnCount),
+                GridLayout.allowedColumnRange.contains(layout.columnCount),
                 "\(invalid) produced \(layout.columnCount)"
             )
-            XCTAssertFalse(GridLayout.allowedCounts.contains(invalid))
+            XCTAssertFalse(GridLayout.allowedColumnRange.contains(invalid))
             XCTAssertEqual(layout.columnCount, GridLayout.defaultCount)
             XCTAssertEqual(layout.gridItems.count, layout.columnCount)
             XCTAssertNotEqual(layout.gridItems.count, invalid)
@@ -72,10 +72,20 @@ final class GridLayoutTests: XCTestCase {
 
         defaults.set(1, forKey: GridLayout.defaultsKey)
         let fromStored = GridLayout(defaults: defaults)
-        XCTAssertTrue(GridLayout.allowedCounts.contains(fromStored.columnCount))
+        XCTAssertTrue(GridLayout.allowedColumnRange.contains(fromStored.columnCount))
         XCTAssertEqual(fromStored.gridItems.count, fromStored.columnCount)
         XCTAssertNotEqual(fromStored.columnCount, 1)
-        XCTAssertNotEqual(fromStored.columnCount, 5)
+        XCTAssertNotEqual(fromStored.columnCount, 9)
+    }
+
+    func testColumnsFiveAndSixAreValidDensities() {
+        let layout = GridLayout(defaults: defaults)
+        layout.setColumnCount(5)
+        XCTAssertEqual(layout.columnCount, 5)
+        XCTAssertEqual(layout.gridItems.count, 5)
+        layout.setColumnCount(6)
+        XCTAssertEqual(layout.columnCount, 6)
+        XCTAssertEqual(layout.gridItems.count, 6)
     }
 
     func testBuildingGridYieldsThatManyColumns() {
@@ -110,10 +120,49 @@ final class GridLayoutTests: XCTestCase {
         XCTAssertEqual(layout.columnCount, 3)
     }
 
-    func testLaunchArgOutsideRangeDoesNotProduceFifthDensity() {
+    func testLaunchArgOutsideRangeDoesNotProduceNinthDensity() {
         let layout = GridLayout(defaults: defaults)
-        layout.applyLaunchArguments(["-GridColumns", "5"])
+        layout.applyLaunchArguments(["-GridColumns", "9"])
         XCTAssertEqual(layout.columnCount, 3)
         XCTAssertEqual(layout.gridItems.count, 3)
+    }
+
+    func testLaunchArgSetsFiveColumnsAndCustomRows() {
+        let layout = GridLayout(defaults: defaults)
+        layout.applyLaunchArguments(["-GridColumns", "5", "-GridRows", "6"])
+        XCTAssertEqual(layout.columnCount, 5)
+        XCTAssertEqual(layout.rowCount, 6)
+    }
+
+    func testSizeClassDefaultsApplyOnlyWhenNothingIsSaved() {
+        let fresh = GridLayout(defaults: defaults)
+        fresh.applySizeClassDefaultsIfNeeded(isCompact: false)
+        XCTAssertEqual(fresh.columnCount, GridLayout.defaultPadColumns)
+        XCTAssertEqual(fresh.rowCount, GridLayout.defaultPadRows)
+
+        let phoneDefaults = UserDefaults(suiteName: "bw-grid-phone-\(UUID().uuidString)")!
+        let phone = GridLayout(defaults: phoneDefaults)
+        phone.applySizeClassDefaultsIfNeeded(isCompact: true)
+        XCTAssertEqual(phone.columnCount, GridLayout.defaultPhoneColumns)
+        XCTAssertEqual(phone.rowCount, GridLayout.defaultPhoneRows)
+
+        // A saved 3-column board is left alone.
+        let saved = GridLayout(defaults: defaults)
+        saved.setColumnCount(3)
+        saved.setRowCount(4)
+        saved.applySizeClassDefaultsIfNeeded(isCompact: false)
+        XCTAssertEqual(saved.columnCount, 3)
+        XCTAssertEqual(saved.rowCount, 4)
+    }
+
+    func testRowCountClampsAndPersists() {
+        let layout = GridLayout(defaults: defaults)
+        layout.setRowCount(8)
+        XCTAssertEqual(layout.rowCount, 8)
+        XCTAssertEqual(layout.cellCount, layout.columnCount * 8)
+        layout.setRowCount(1)
+        XCTAssertEqual(layout.rowCount, GridLayout.defaultRows)
+        let reopened = GridLayout(defaults: defaults)
+        XCTAssertEqual(reopened.rowCount, GridLayout.defaultRows)
     }
 }
