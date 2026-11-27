@@ -20,6 +20,20 @@ struct ContentView: View {
     @FocusState private var searchFieldFocused: Bool
     @State private var voice = VoiceRecognizer()
     @State private var pendingVoiceWord: String?
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var viewWidth: CGFloat = Self.initialViewWidth
+
+    private static var initialViewWidth: CGFloat {
+        UIScreen.main.bounds.width
+    }
+
+    private var chrome: BoardChrome {
+        BoardChrome.make(
+            horizontalSizeClass: horizontalSizeClass,
+            availableWidth: viewWidth,
+            columnCount: grid.columnCount
+        )
+    }
 
     init(
         store: CardStore,
@@ -78,6 +92,13 @@ struct ContentView: View {
             }
         }
         .background(Theme.board.ignoresSafeArea())
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(key: BoardWidthPreference.self, value: geo.size.width)
+            }
+        )
+        .onPreferenceChange(BoardWidthPreference.self) { viewWidth = $0 }
+        .environment(\.boardChrome, chrome)
         .task { await store.bootstrap() }
         .onAppear { consumeLaunchArguments() }
         .onChange(of: voice.finishedTranscript) { _, transcript in
@@ -590,7 +611,7 @@ struct ContentView: View {
     /// Sticky core vocabulary. Always on-screen at root and inside folders;
     /// kid mode can tap it; caregiver Edit does not hide it.
     private var coreRow: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: chrome.coreSpacing) {
             ForEach(store.coreCards) { card in
                 Button {
                     store.tapCore(card)
@@ -602,6 +623,7 @@ struct ContentView: View {
                         revision: store.imageRevision[card.slug, default: 0],
                         highlighted: store.lastSpokenSlug == card.slug
                     )
+                    .frame(width: chrome.coreCellWidth)
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(.isButton)
@@ -610,8 +632,8 @@ struct ContentView: View {
                 .accessibilityIdentifier("coreWord-\(card.slug)")
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 10)
+        .padding(.horizontal, chrome.corePadding)
+        .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
         .background(Theme.slate)
         .accessibilityElement(children: .contain)
@@ -623,7 +645,7 @@ struct ContentView: View {
     /// Stays outside the grid ScrollView so it remains visible inside folders.
     private var recentsRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
+            HStack(spacing: chrome.coreSpacing) {
                 ForEach(store.recentCards) { card in
                     Button {
                         store.tapRecent(card)
@@ -636,6 +658,7 @@ struct ContentView: View {
                             revision: store.imageRevision[card.slug, default: 0],
                             highlighted: store.lastSpokenSlug == card.slug
                         )
+                        .frame(width: chrome.coreCellWidth)
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(.isButton)
@@ -644,10 +667,11 @@ struct ContentView: View {
                     .accessibilityIdentifier("recentWord-\(card.slug)")
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
+            .padding(.horizontal, chrome.corePadding)
+            .padding(.vertical, 8)
         }
         .frame(maxWidth: .infinity)
+        .frame(height: chrome.coreRowHeight + 16)
         .background(Theme.slate)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Recents")
@@ -660,12 +684,13 @@ struct ContentView: View {
                 emptyBoard
                     .padding(.top, 48)
             } else {
-                LazyVGrid(columns: columns, spacing: 22) {
+                LazyVGrid(columns: chrome.gridItems, spacing: chrome.gridSpacing) {
                     ForEach(visibleBoardItems) { item in
                         boardCell(item)
                     }
                 }
-                .padding(24)
+                .padding(.horizontal, chrome.gridPadding)
+                .padding(.vertical, chrome.gridPadding + chrome.highlightStroke)
             }
         }
         .refreshable { await store.refresh() }
@@ -710,20 +735,22 @@ struct ContentView: View {
     }
 
     private var sentenceStrip: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: chrome.stripSpacing) {
             Button {
                 store.speakStrip()
             } label: {
-                VStack(spacing: 4) {
+                VStack(spacing: 2) {
                     Image(systemName: "speaker.wave.2.fill")
-                        .font(.system(size: 28, weight: .bold))
+                        .font(.system(size: chrome.stripIconSize, weight: .bold))
                     Text("Speak")
-                        .font(.system(size: 18, weight: .heavy, design: .rounded))
+                        .font(.system(size: chrome.stripLabelSize, weight: .heavy, design: .rounded))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
-                .frame(width: 108, height: 116)
+                .frame(width: chrome.speakWidth, height: chrome.stripHeight)
                 .foregroundStyle(Theme.cream)
                 .background(store.strip.isEmpty ? Theme.coral.opacity(0.4) : Theme.coral)
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             .disabled(store.strip.isEmpty)
             .accessibilityIdentifier("speakSentence")
@@ -731,25 +758,28 @@ struct ContentView: View {
 
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
+                    HStack(spacing: chrome.stripChipSpacing) {
                         if store.strip.isEmpty {
-                            Text("Tap cards to build a sentence")
-                                .font(.system(size: 22, weight: .semibold, design: .rounded))
+                            Text(chrome.isCompact ? "Tap cards to talk" : "Tap cards to build a sentence")
+                                .font(.system(size: chrome.stripPlaceholderSize, weight: .semibold, design: .rounded))
                                 .foregroundStyle(Theme.muted)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
                                 .padding(.horizontal, 8)
                         } else {
                             ForEach(store.strip.chips) { chip in
                                 StripChipView(
                                     card: chip.card,
                                     label: store.displayLabel(for: chip.card),
-                                    image: store.image(for: chip.card)
+                                    image: store.image(for: chip.card),
+                                    remoteURL: store.remoteImageURL(for: chip.card)
                                 )
                                 .id(chip.id)
                             }
                         }
                     }
                     .padding(.horizontal, 8)
-                    .frame(minHeight: 116)
+                    .frame(minHeight: chrome.stripHeight)
                 }
                 .onChange(of: store.strip.chips.count) {
                     if let last = store.strip.chips.last {
@@ -760,11 +790,12 @@ struct ContentView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(minHeight: 124)
+            .frame(minWidth: chrome.minimumChipWellWidth)
+            .frame(height: chrome.stripHeight)
             .background(Theme.cream)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(Theme.ink.opacity(0.22), lineWidth: 3)
             )
             .accessibilityIdentifier("sentenceStrip")
@@ -772,18 +803,20 @@ struct ContentView: View {
             Button {
                 store.backspaceStrip()
             } label: {
-                VStack(spacing: 4) {
+                VStack(spacing: 2) {
                     Image(systemName: "delete.backward.fill")
-                        .font(.system(size: 28, weight: .bold))
+                        .font(.system(size: chrome.stripIconSize, weight: .bold))
                     Text("Back")
-                        .font(.system(size: 16, weight: .heavy, design: .rounded))
+                        .font(.system(size: chrome.stripLabelSize, weight: .heavy, design: .rounded))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
-                .frame(width: 88, height: 116)
+                .frame(width: chrome.sideButtonWidth, height: chrome.stripHeight)
                 .foregroundStyle(Theme.ink)
                 .background(Theme.cream)
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .stroke(Theme.ink.opacity(0.35), lineWidth: 3)
                 )
             }
@@ -794,23 +827,25 @@ struct ContentView: View {
             Button {
                 store.clearStrip()
             } label: {
-                VStack(spacing: 4) {
+                VStack(spacing: 2) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 28, weight: .bold))
+                        .font(.system(size: chrome.stripIconSize, weight: .bold))
                     Text("Clear")
-                        .font(.system(size: 16, weight: .heavy, design: .rounded))
+                        .font(.system(size: chrome.stripLabelSize, weight: .heavy, design: .rounded))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
-                .frame(width: 88, height: 116)
+                .frame(width: chrome.sideButtonWidth, height: chrome.stripHeight)
                 .foregroundStyle(Theme.cream)
                 .background(store.strip.isEmpty ? Theme.slate.opacity(0.45) : Theme.slate)
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             .disabled(store.strip.isEmpty)
             .accessibilityIdentifier("clearSentence")
             .accessibilityLabel("Clear sentence")
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.horizontal, chrome.stripPadding)
+        .padding(.vertical, chrome.stripVerticalPadding)
         .background(Theme.board)
     }
 
@@ -1010,7 +1045,7 @@ struct ContentView: View {
     }
 
     private var columns: [GridItem] {
-        grid.gridItems
+        chrome.gridItems
     }
 
     private var emptyBoardHint: String {
@@ -1323,58 +1358,35 @@ struct CoreWordCell: View {
     let remoteURL: URL?
     let revision: Int
     let highlighted: Bool
+    @Environment(\.boardChrome) private var chrome
 
     private var shown: String { label ?? card.word }
 
     var body: some View {
         VStack(spacing: 0) {
-            ZStack {
-                Theme.cream
-                if let image {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .padding(8)
-                } else if let remoteURL {
-                    AsyncImage(url: remoteURL) { phase in
-                        switch phase {
-                        case .success(let img):
-                            img.resizable().scaledToFit().padding(8)
-                        case .failure:
-                            Image(systemName: "photo")
-                                .font(.system(size: 28, weight: .bold))
-                                .foregroundStyle(Theme.muted)
-                        default:
-                            ProgressView()
-                        }
-                    }
-                } else {
-                    ProgressView()
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 92)
-            .background(Theme.cream)
+            PecsImageView(image: image, remoteURL: remoteURL, placeholderSize: 28)
+                .frame(maxWidth: .infinity)
+                .frame(height: chrome.coreImageHeight)
 
             Text(shown)
-                .font(.system(size: 22, weight: .heavy, design: .rounded))
+                .font(.system(size: chrome.coreTitleSize, weight: .heavy, design: .rounded))
                 .foregroundStyle(Theme.cream)
                 .lineLimit(1)
                 .minimumScaleFactor(0.55)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .padding(.horizontal, 4)
+                .frame(height: chrome.coreLabelHeight)
+                .padding(.horizontal, 2)
                 .background(Theme.labelWell)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 136)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .frame(height: chrome.coreRowHeight)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(highlighted ? Theme.coral : Theme.cardStroke, lineWidth: highlighted ? 6 : 4)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(highlighted ? Theme.coral : Theme.cardStroke, lineWidth: highlighted ? 4 : 3)
         )
-        .shadow(color: .black.opacity(0.16), radius: highlighted ? 8 : 4, y: 3)
+        .shadow(color: .black.opacity(0.16), radius: highlighted ? 6 : 3, y: 2)
         .id("core-\(card.slug)-\(revision)")
     }
 }
@@ -1383,38 +1395,28 @@ struct StripChipView: View {
     let card: Card
     var label: String? = nil
     let image: UIImage?
+    var remoteURL: URL? = nil
+    @Environment(\.boardChrome) private var chrome
 
     private var shown: String { label ?? card.word }
 
     var body: some View {
         VStack(spacing: 0) {
-            ZStack {
-                Theme.cream
-                if let image {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .padding(6)
-                } else {
-                    Text(String(shown.prefix(1)).uppercased())
-                        .font(.system(size: 28, weight: .heavy, design: .rounded))
-                        .foregroundStyle(Theme.muted)
-                }
-            }
-            .frame(width: 100, height: 76)
+            PecsImageView(image: image, remoteURL: remoteURL, placeholderSize: 22)
+                .frame(width: chrome.chipWidth, height: chrome.chipImageHeight)
 
             Text(shown)
-                .font(.system(size: 16, weight: .heavy, design: .rounded))
+                .font(.system(size: chrome.stripLabelSize, weight: .heavy, design: .rounded))
                 .foregroundStyle(Theme.cream)
                 .lineLimit(1)
                 .minimumScaleFactor(0.55)
-                .frame(width: 100, height: 32)
+                .frame(width: chrome.chipWidth, height: chrome.chipLabelHeight)
                 .background(Theme.labelWell)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Theme.cardStroke, lineWidth: 3)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Theme.cardStroke, lineWidth: 2)
         )
         .accessibilityLabel(shown)
     }
@@ -1426,62 +1428,49 @@ struct FolderCell: View {
     var image: UIImage? = nil
     var remoteURL: URL? = nil
     var revision: Int = 0
+    @Environment(\.boardChrome) private var chrome
 
     private var shown: String { label ?? folder.name }
 
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
-                Theme.cream
-                if let image {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .padding(10)
-                } else if let remoteURL {
-                    AsyncImage(url: remoteURL) { phase in
-                        switch phase {
-                        case .success(let img):
-                            img.resizable().scaledToFit().padding(10)
-                        case .failure:
-                            folderFallbackIcon
-                        default:
-                            ProgressView()
-                        }
-                    }
+                if image != nil || remoteURL != nil {
+                    PecsImageView(image: image, remoteURL: remoteURL, placeholderSize: 44)
                 } else {
+                    Theme.cream
                     folderFallbackIcon
                 }
             }
             .overlay(alignment: .topLeading) {
                 Text("folder")
-                    .font(.system(size: 16, weight: .heavy, design: .rounded))
+                    .font(.system(size: chrome.isCompact ? 11 : 16, weight: .heavy, design: .rounded))
                     .foregroundStyle(Theme.cream)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, chrome.isCompact ? 8 : 12)
+                    .padding(.vertical, chrome.isCompact ? 4 : 6)
                     .background(Theme.coral)
                     .clipShape(Capsule())
-                    .padding(12)
+                    .padding(chrome.isCompact ? 6 : 12)
                     .accessibilityHidden(true)
             }
-            .frame(minHeight: 168)
+            .aspectRatio(1, contentMode: .fit)
             .frame(maxWidth: .infinity)
             .background(Theme.cream)
 
             Text(shown)
-                .font(.system(size: 26, weight: .heavy, design: .rounded))
+                .font(.system(size: chrome.cellTitleSize, weight: .heavy, design: .rounded))
                 .foregroundStyle(Theme.cream)
                 .lineLimit(2)
                 .minimumScaleFactor(0.6)
                 .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity, minHeight: 64)
-                .padding(.horizontal, 8)
+                .frame(maxWidth: .infinity, minHeight: chrome.cellLabelMinHeight)
+                .padding(.horizontal, 6)
                 .background(Theme.labelWell)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: chrome.isCompact ? 16 : 22, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Theme.cardStroke, lineWidth: 5)
+            RoundedRectangle(cornerRadius: chrome.isCompact ? 16 : 22, style: .continuous)
+                .stroke(Theme.cardStroke, lineWidth: chrome.isCompact ? 3 : 5)
         )
         .shadow(color: .black.opacity(0.18), radius: 6, y: 5)
         .id("folder-\(folder.id)-\(revision)")
@@ -1489,7 +1478,7 @@ struct FolderCell: View {
 
     private var folderFallbackIcon: some View {
         Image(systemName: "folder.fill")
-            .font(.system(size: 76, weight: .bold))
+            .font(.system(size: chrome.isCompact ? 44 : 76, weight: .bold))
             .foregroundStyle(Theme.slate.opacity(0.82))
             .accessibilityHidden(true)
     }
@@ -1502,57 +1491,36 @@ struct CardCell: View {
     let remoteURL: URL?
     let revision: Int
     let highlighted: Bool
+    @Environment(\.boardChrome) private var chrome
 
     private var shown: String { label ?? card.word }
 
     var body: some View {
         VStack(spacing: 0) {
-            ZStack {
-                Theme.cream
-                if let image {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .padding(10)
-                } else if let remoteURL {
-                    AsyncImage(url: remoteURL) { phase in
-                        switch phase {
-                        case .success(let img):
-                            img.resizable().scaledToFit().padding(10)
-                        case .failure:
-                            Image(systemName: "photo")
-                                .font(.system(size: 44, weight: .bold))
-                                .foregroundStyle(Theme.muted)
-                        default:
-                            ProgressView()
-                        }
-                    }
-                } else {
-                    ProgressView()
-                }
-            }
-            .frame(minHeight: 168)
-            .frame(maxWidth: .infinity)
-            .background(Theme.cream)
+            PecsImageView(image: image, remoteURL: remoteURL, placeholderSize: 36)
+                .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: .infinity)
+                .background(Theme.cream)
 
             Text(shown)
-                .font(.system(size: 26, weight: .heavy, design: .rounded))
+                .font(.system(size: chrome.cellTitleSize, weight: .heavy, design: .rounded))
                 .foregroundStyle(Theme.cream)
                 .lineLimit(2)
                 .minimumScaleFactor(0.6)
                 .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity, minHeight: 64)
-                .padding(.horizontal, 8)
+                .frame(maxWidth: .infinity, minHeight: chrome.cellLabelMinHeight)
+                .padding(.horizontal, 6)
                 .background(Theme.labelWell)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: chrome.isCompact ? 16 : 22, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(highlighted ? Theme.coral : Theme.cardStroke, lineWidth: highlighted ? 8 : 5)
+            RoundedRectangle(cornerRadius: chrome.isCompact ? 16 : 22, style: .continuous)
+                .stroke(
+                    highlighted ? Theme.coral : Theme.cardStroke,
+                    lineWidth: highlighted ? chrome.highlightStroke : (chrome.isCompact ? 3 : 5)
+                )
         )
-        .shadow(color: .black.opacity(0.18), radius: highlighted ? 12 : 6, y: 5)
-        .scaleEffect(highlighted ? 1.03 : 1)
-        .animation(.spring(duration: 0.28), value: highlighted)
+        .shadow(color: .black.opacity(0.18), radius: highlighted ? 8 : 5, y: 4)
         .id("\(card.slug)-\(revision)")
     }
 }

@@ -10,7 +10,17 @@ This project is not affiliated with Proloquo2Go or AssistiveWare. We mention Pro
 
 ## Familiar layout, original assets
 
-The app should work mostly like Proloquo2Go in layout and interaction — message bar, grid, folders, core words, color-by-word-type, edit/hide — so a kid who already uses a paid AAC app can switch without relearning.
+The app should work mostly like Proloquo2Go in layout and interaction — message bar, grid, folders, core words, color-by-word-type, edit/hide — so a kid who already uses a paid AAC app can switch without relearning. Teachers and therapists who already know Proloquo2Go should be able to use Hope's Voice without relearning the editor either. This is a layout-and-interaction match only. We never copy Proloquo2Go branding, voices, or symbols.
+
+Priority P2G-familiar workflow:
+
+- A visible but low-contrast Edit / lock control in the top toolbar. Unlock is kid-proof (long-press or two-finger hold). Once unlocked, Edit mode is obvious, and there is a clear “+ Add button” action (type or mic).
+- In Edit, tapping a button opens a button editor: label, spoken text, picture (generate a new symbol or pick a photo on the device), border / background color, and folder link.
+- Tapping an empty grid cell adds a button in that position.
+- A consistent fixed grid: buttons keep their row and column so motor memory stays stable. Grid size is configurable (rows × columns). Default is 4×6 on iPad and a smaller default on iPhone.
+- Message bar: tapped words appear as small picture + label chips in a single scrolling row; tapping the bar speaks the whole sentence. Speak, backspace, and clear stay available. Message-bar settings (`speakOnTap`, `speakOnBarTap`, `clearAfterSpeak`) are configurable.
+- Folder Home / Back navigation, with folder buttons visually distinct (a tab / folder shape). Returning home after a folder selection is configurable.
+- Fitzgerald-style part-of-speech border or background colors, configurable, with a custom override later.
 
 All symbols are original (AI-generated PECS-style pictures, open-symbol fallbacks, or a family’s own files). We never copy Proloquo2Go, SymbolStix, or other proprietary assets, voices, or branding.
 
