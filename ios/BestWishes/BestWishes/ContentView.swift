@@ -27,6 +27,7 @@ struct ContentView: View {
     @State private var voice = VoiceRecognizer()
     @State private var pendingVoiceWord: String?
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.boardCellExpands) private var boardCellExpands
     @State private var viewWidth: CGFloat = Self.initialViewWidth
 
     private static var initialViewWidth: CGFloat {
@@ -855,10 +856,13 @@ struct ContentView: View {
                     .padding(.horizontal, chrome.gridPadding)
                     .padding(.vertical, chrome.gridPadding + chrome.highlightStroke)
                 }
-            } else if store.hasImportedBoard, store.importedPageCount > 1 {
-                // A paged TabView inside a ScrollView collapses to zero height.
-                pagedBoard
+            } else if store.hasImportedBoard {
+                // Imported boards fill the remaining space with equal cells so a
+                // 4×6 page fits (including empty rows, which keeps short folders
+                // bottom-aligned when their cells are already on the last rows).
+                importedBoardGrid
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .environment(\.boardCellExpands, true)
             } else {
                 ScrollView {
                     LazyVGrid(columns: chrome.gridItems, spacing: chrome.gridSpacing) {
@@ -874,25 +878,57 @@ struct ContentView: View {
         .refreshable { await store.refresh() }
     }
 
+    @ViewBuilder
+    private var importedBoardGrid: some View {
+        if store.importedPageCount > 1 {
+            pagedBoard
+        } else {
+            filledImportGrid(
+                slots: boardSlots,
+                rowStart: 0,
+                rows: max(store.importedBoardRows ?? viewportRows, 1),
+                cols: max(store.importedBoardCols ?? viewportCols, 1)
+            )
+        }
+    }
+
     private var pagedBoard: some View {
         let pages = store.importedPageCount
         let rowsPerPage = viewportRows
         return TabView(selection: $boardPage) {
             ForEach(0..<pages, id: \.self) { page in
-                let pageSlots = boardSlots.filter { $0.coord.row >= page * rowsPerPage && $0.coord.row < (page + 1) * rowsPerPage }
-                LazyVGrid(columns: chrome.gridItems, spacing: chrome.gridSpacing) {
-                    ForEach(pageSlots) { slot in
-                        boardSlotCell(slot)
-                    }
-                }
-                .padding(.horizontal, chrome.gridPadding)
-                .padding(.vertical, chrome.gridPadding + chrome.highlightStroke)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                filledImportGrid(
+                    slots: boardSlots,
+                    rowStart: page * rowsPerPage,
+                    rows: rowsPerPage,
+                    cols: max(store.importedBoardCols ?? viewportCols, 1)
+                )
                 .tag(page)
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .automatic))
         .onChange(of: store.currentFolderName) { _, _ in boardPage = 0 }
+    }
+
+    /// Equal-sized cells that fill the board area, including empty rows.
+    private func filledImportGrid(slots: [BoardSlot], rowStart: Int, rows: Int, cols: Int) -> some View {
+        let rows = max(rows, 1)
+        let cols = max(cols, 1)
+        let lookup = Dictionary(uniqueKeysWithValues: slots.map { ($0.coord, $0) })
+        return Grid(horizontalSpacing: chrome.gridSpacing, verticalSpacing: chrome.gridSpacing) {
+            ForEach(0..<rows, id: \.self) { row in
+                GridRow {
+                    ForEach(0..<cols, id: \.self) { col in
+                        let coord = GridCoord(row: rowStart + row, col: col)
+                        boardSlotCell(lookup[coord] ?? .empty(coord))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, chrome.gridPadding)
+        .padding(.vertical, chrome.gridPadding + chrome.highlightStroke)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     /// Fixed row × column slots. Empty cells stay put so buttons never slide.
@@ -906,6 +942,10 @@ struct ContentView: View {
 
     private var viewportRows: Int {
         max(store.hasImportedBoard ? store.settings.viewportRows : grid.rowCount, 1)
+    }
+
+    private var viewportCols: Int {
+        max(store.hasImportedBoard ? store.settings.viewportCols : grid.columnCount, 1)
     }
 
     /// Kid mode always shows the full current board. Caregiver search is a view over it.
@@ -1221,7 +1261,8 @@ struct ContentView: View {
                         .foregroundStyle(Theme.ink.opacity(0.45))
                     }
                 }
-                .aspectRatio(0.82, contentMode: .fit)
+                .frame(maxWidth: .infinity, maxHeight: boardCellExpands ? .infinity : nil)
+                .aspectRatio(boardCellExpands ? nil as CGFloat? : 0.82, contentMode: .fit)
         }
         .buttonStyle(.plain)
         .disabled(!canAdd)
@@ -1883,6 +1924,60 @@ struct StripChipView: View {
     }
 }
 
+private enum BoardCellExpandsKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var boardCellExpands: Bool {
+        get { self[BoardCellExpandsKey.self] }
+        set { self[BoardCellExpandsKey.self] = newValue }
+    }
+}
+
+/// Manila-folder silhouette so folder buttons are distinct from word cells.
+struct FolderTabShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let tabHeight = max(10, min(rect.height * 0.11, 20))
+        let tabWidth = min(rect.width * 0.42, 96)
+        let corner = min(14, rect.width * 0.08, rect.height * 0.08)
+        var path = Path()
+        path.move(to: CGPoint(x: corner, y: tabHeight))
+        path.addLine(to: CGPoint(x: tabWidth * 0.12, y: tabHeight))
+        path.addQuadCurve(
+            to: CGPoint(x: tabWidth * 0.20, y: tabHeight * 0.25),
+            control: CGPoint(x: tabWidth * 0.12, y: tabHeight * 0.15)
+        )
+        path.addLine(to: CGPoint(x: tabWidth * 0.78, y: tabHeight * 0.25))
+        path.addQuadCurve(
+            to: CGPoint(x: tabWidth, y: tabHeight),
+            control: CGPoint(x: tabWidth * 0.92, y: tabHeight * 0.15)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX - corner, y: tabHeight))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX, y: tabHeight + corner),
+            control: CGPoint(x: rect.maxX, y: tabHeight)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - corner))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX - corner, y: rect.maxY),
+            control: CGPoint(x: rect.maxX, y: rect.maxY)
+        )
+        path.addLine(to: CGPoint(x: corner, y: rect.maxY))
+        path.addQuadCurve(
+            to: CGPoint(x: 0, y: rect.maxY - corner),
+            control: CGPoint(x: 0, y: rect.maxY)
+        )
+        path.addLine(to: CGPoint(x: 0, y: tabHeight + corner))
+        path.addQuadCurve(
+            to: CGPoint(x: corner, y: tabHeight),
+            control: CGPoint(x: 0, y: tabHeight)
+        )
+        path.closeSubpath()
+        return path
+    }
+}
+
 struct FolderCell: View {
     let folder: BoardFolder
     var label: String? = nil
@@ -1892,8 +1987,10 @@ struct FolderCell: View {
     var backgroundColor: Color? = nil
     var borderColor: Color? = nil
     @Environment(\.boardChrome) private var chrome
+    @Environment(\.boardCellExpands) private var expands
 
     private var shown: String { label ?? folder.name }
+    private var lineWidth: CGFloat { chrome.isCompact ? 3 : 5 }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1901,24 +1998,13 @@ struct FolderCell: View {
                 if image != nil || remoteURL != nil {
                     PecsImageView(image: image, remoteURL: remoteURL, placeholderSize: 44)
                 } else {
-                    Theme.cream
                     folderFallbackIcon
                 }
             }
-            .overlay(alignment: .topLeading) {
-                Text("folder")
-                    .font(.system(size: chrome.isCompact ? 11 : 16, weight: .heavy, design: .rounded))
-                    .foregroundStyle(Theme.cream)
-                    .padding(.horizontal, chrome.isCompact ? 8 : 12)
-                    .padding(.vertical, chrome.isCompact ? 4 : 6)
-                    .background(Theme.coral)
-                    .clipShape(Capsule())
-                    .padding(chrome.isCompact ? 6 : 12)
-                    .accessibilityHidden(true)
-            }
-            .aspectRatio(1, contentMode: .fit)
             .frame(maxWidth: .infinity)
-            .background(backgroundColor ?? Theme.cream)
+            .frame(maxHeight: expands ? .infinity : nil)
+            .aspectRatio(expands ? nil as CGFloat? : 1, contentMode: .fit)
+            .padding(.top, 12)
 
             Text(shown)
                 .font(.system(size: chrome.cellTitleSize, weight: .heavy, design: .rounded))
@@ -1930,13 +2016,16 @@ struct FolderCell: View {
                 .padding(.horizontal, 6)
                 .background(Theme.labelWell)
         }
-        .clipShape(RoundedRectangle(cornerRadius: chrome.isCompact ? 16 : 22, style: .continuous))
+        .frame(maxWidth: .infinity, maxHeight: expands ? .infinity : nil)
+        .background(backgroundColor ?? Theme.cream)
+        .clipShape(FolderTabShape())
         .overlay(
-            RoundedRectangle(cornerRadius: chrome.isCompact ? 16 : 22, style: .continuous)
-                .stroke(borderColor ?? Theme.cardStroke, lineWidth: chrome.isCompact ? 3 : 5)
+            FolderTabShape()
+                .stroke(borderColor ?? Theme.cardStroke, lineWidth: lineWidth)
         )
         .shadow(color: .black.opacity(0.18), radius: 6, y: 5)
         .id("folder-\(folder.id)-\(revision)")
+        .accessibilityLabel("\(shown) folder")
     }
 
     private var folderFallbackIcon: some View {
@@ -1957,14 +2046,19 @@ struct CardCell: View {
     var backgroundColor: Color? = nil
     var borderColor: Color? = nil
     @Environment(\.boardChrome) private var chrome
+    @Environment(\.boardCellExpands) private var expands
 
     private var shown: String { label ?? card.word }
+    private var lineWidth: CGFloat {
+        highlighted ? chrome.highlightStroke : (chrome.isCompact ? 3 : 5)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             PecsImageView(image: image, remoteURL: remoteURL, placeholderSize: 36)
-                .aspectRatio(1, contentMode: .fit)
                 .frame(maxWidth: .infinity)
+                .frame(maxHeight: expands ? .infinity : nil)
+                .aspectRatio(expands ? nil as CGFloat? : 1, contentMode: .fit)
                 .background((backgroundColor ?? Theme.cream))
 
             Text(shown)
@@ -1977,12 +2071,14 @@ struct CardCell: View {
                 .padding(.horizontal, 6)
                 .background(Theme.labelWell)
         }
+        .frame(maxWidth: .infinity, maxHeight: expands ? .infinity : nil)
+        .background(backgroundColor ?? Theme.cream)
         .clipShape(RoundedRectangle(cornerRadius: chrome.isCompact ? 16 : 22, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: chrome.isCompact ? 16 : 22, style: .continuous)
                 .stroke(
                     highlighted ? Theme.coral : (borderColor ?? Theme.cardStroke),
-                    lineWidth: highlighted ? chrome.highlightStroke : (chrome.isCompact ? 3 : 5)
+                    lineWidth: lineWidth
                 )
         )
         .shadow(color: .black.opacity(0.18), radius: highlighted ? 8 : 5, y: 4)
