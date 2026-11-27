@@ -36,18 +36,22 @@ struct ProfileSettings: Equatable, Codable, Sendable {
     )
 
     static func fromImport(_ profile: BoardImportProfile) -> ProfileSettings {
+        var style = profile.messageBar.style ?? "standard"
+        if profile.messageBar.style == nil, Self.looksLikeCompactBlueBar(profile) {
+            style = "compactBlue"
+        }
         var bar = MessageBarSettings(
             speakOnTap: profile.messageBar.speakOnTap,
             speakOnBarTap: profile.messageBar.speakOnBarTap,
             clearAfterSpeak: profile.messageBar.clearAfterSpeak,
-            style: profile.messageBar.style ?? "standard",
+            style: style,
             backgroundHex: Self.stripHash(profile.messageBar.background),
-            textAboveImage: profile.messageBar.textAboveImage ?? false,
+            textAboveImage: profile.messageBar.textAboveImage ?? (style == "compactBlue"),
             showDeleteLast: profile.messageBar.deleteLast ?? true
         )
-        if bar.style == "compactBlue", bar.backgroundHex == nil {
-            bar.backgroundHex = "0000CB"
-            bar.textAboveImage = true
+        if bar.style == "compactBlue" {
+            if bar.backgroundHex == nil { bar.backgroundHex = "0000CB" }
+            if profile.messageBar.textAboveImage == nil { bar.textAboveImage = true }
         }
         let background = Self.stripHash(profile.background)
             ?? (profile.extra["backgroundColor"].flatMap(Self.colorNameToHex) ?? "E8DBC2")
@@ -60,7 +64,7 @@ struct ProfileSettings: Equatable, Codable, Sendable {
             homeBoard: profile.homeBoard,
             viewportRows: max(profile.grid.rows, 1),
             viewportCols: max(profile.grid.cols, 1),
-            voice: profile.voice,
+            voice: Self.resolvedVoice(profile.voice),
             messageBar: bar,
             returnHomeAfterSelection: profile.folderBehavior.returnHomeAfterSelection,
             addFolderWordToBar: profile.folderBehavior.addFolderWordToBar,
@@ -71,6 +75,30 @@ struct ProfileSettings: Equatable, Codable, Sendable {
             showCoreRow: showChrome,
             showRecents: showChrome
         )
+    }
+
+    /// Stand-in for proprietary voices (for example Acapela) that we cannot ship.
+    static func resolvedVoice(_ voice: BoardImportVoice) -> BoardImportVoice {
+        var resolved = voice
+        if resolved.engine == "system", !resolved.voiceId.hasPrefix("com.apple.") {
+            resolved.voiceId = "com.apple.voice.compact.en-US.Samantha"
+        }
+        return resolved
+    }
+
+    /// Infer the compact blue P2G-style bar when the file describes it but omits `style`.
+    static func looksLikeCompactBlueBar(_ profile: BoardImportProfile) -> Bool {
+        if let background = stripHash(profile.messageBar.background), background == "0000CB" {
+            return true
+        }
+        if case .string(let look) = profile.extra["messageBarLook"] {
+            let lowered = look.lowercased()
+            if lowered.contains("0000cb") || lowered.contains("delete") { return true }
+        }
+        if boolFromExtra(profile.extra["textBelowImages"]) == false {
+            return true
+        }
+        return false
     }
 
     static func stripHash(_ raw: String?) -> String? {
