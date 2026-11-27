@@ -458,10 +458,10 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Best Wishes";
+				INFOPLIST_KEY_CFBundleDisplayName = "Hope's Voice";
 				INFOPLIST_KEY_LSRequiresIPhoneOS = YES;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Best Wishes uses the microphone so a caregiver can add a word by voice. Kid mode never listens.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Best Wishes listens on this iPad so a caregiver can add a word by voice. Speech stays on the device.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Hope's Voice uses the microphone so a caregiver can add a word by voice. Kid mode never listens.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Hope's Voice listens on this iPad so a caregiver can add a word by voice. Speech stays on the device.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -476,7 +476,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = love.bestwishes.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davidgeorgehope.hopesvoice;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -502,10 +502,10 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Best Wishes";
+				INFOPLIST_KEY_CFBundleDisplayName = "Hope's Voice";
 				INFOPLIST_KEY_LSRequiresIPhoneOS = YES;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Best Wishes uses the microphone so a caregiver can add a word by voice. Kid mode never listens.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Best Wishes listens on this iPad so a caregiver can add a word by voice. Speech stays on the device.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Hope's Voice uses the microphone so a caregiver can add a word by voice. Kid mode never listens.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Hope's Voice listens on this iPad so a caregiver can add a word by voice. Speech stays on the device.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -520,7 +520,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = love.bestwishes.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davidgeorgehope.hopesvoice;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -547,7 +547,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = love.bestwishes.app.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davidgeorgehope.hopesvoice.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -572,7 +572,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = love.bestwishes.app.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davidgeorgehope.hopesvoice.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

@@ -10,7 +10,7 @@ enum APIError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .badURL:
-            return "Could not reach Best Wishes."
+            return "Could not reach Hope's Voice."
         case .http(let code, let body):
             if code == 409 { return "That word is already on the board." }
             if !body.isEmpty { return body }
@@ -25,10 +25,10 @@ enum APIError: LocalizedError {
     }
 }
 
-/// Talks only to bestwishes.love. The iOS app never calls xAI.
+/// Talks only to the Hope's Voice API. The iOS app never calls xAI.
 struct APIClient: Sendable {
     static let shared = APIClient()
-    static let productionBaseURL = URL(string: "https://bestwishes.love")!
+    static let productionBaseURL = URL(string: "https://hopesvoice.davidgeorgehope.com")!
     /// Unreachable loopback used by `-APIBaseURL` and OfflineBoardTests. Fails fast.
     static let unreachableBaseURL = URL(string: "http://127.0.0.1:1")!
 

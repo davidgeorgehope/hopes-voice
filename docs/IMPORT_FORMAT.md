@@ -1,4 +1,4 @@
-# BestWishes board import format — `bestwishes.board/v1`
+# Hope's Voice board import format — `bestwishes.board/v1`
 
 One JSON file describes one child's whole setup. The format spec is public (it can go in the repo).
 A real child's file is private family data: it never goes in git. It's loaded on-device

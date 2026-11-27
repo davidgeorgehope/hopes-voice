@@ -1,9 +1,9 @@
 ---
 name: maintenance-loop
-description: Run the BestWishes maintenance loop — pick a ready issue, implement a small slice, test, merge to main, and update STATUS.md. Use when doing weekly or unattended work on this AAC app, or when asked to advance milestone-1.
+description: Run the Hope's Voice maintenance loop — pick a ready issue, implement a small slice, test, merge to main, and update STATUS.md. Use when doing weekly or unattended work on this AAC app, or when asked to advance milestone-1.
 ---
 
-# BestWishes maintenance loop
+# Hope's Voice maintenance loop
 
 ## Before you touch code
 

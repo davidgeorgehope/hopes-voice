@@ -67,7 +67,7 @@ struct VoiceConfirmSheet: View {
                 .submitLabel(.done)
                 .accessibilityLabel("Word to add")
                 .accessibilityIdentifier("voiceConfirmWord")
-            Text("Best Wishes will make the picture and the voice.")
+            Text("Hope's Voice will make the picture and the voice.")
                 .font(.system(size: 20, weight: .medium, design: .rounded))
                 .foregroundStyle(Theme.muted)
                 .multilineTextAlignment(.center)

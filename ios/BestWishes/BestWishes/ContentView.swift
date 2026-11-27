@@ -415,7 +415,7 @@ struct ContentView: View {
 
     private var title: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("Best Wishes")
+            Text("Hope's Voice")
                 .font(.system(.title2, design: .rounded).weight(.heavy))
                 .foregroundStyle(Theme.cream)
             Text(profiles.activeName)
@@ -1015,9 +1015,9 @@ struct ContentView: View {
 
     private var emptyBoardHint: String {
         if mode.showsAddChrome {
-            return "Type a word up top and tap Add.\nBest Wishes will make the picture and the voice."
+            return "Type a word up top and tap Add.\nHope's Voice will make the picture and the voice."
         }
-        return "Ask a grown-up to add a word.\nBest Wishes will make the picture and the voice."
+        return "Ask a grown-up to add a word.\nHope's Voice will make the picture and the voice."
     }
 
     private var canAdd: Bool {

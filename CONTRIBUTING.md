@@ -1,4 +1,4 @@
-# Contributing to BestWishes
+# Contributing to Hope's Voice
 
 Thank you for helping make a free AAC app that families can actually use.
 

@@ -1,10 +1,10 @@
-# BestWishes requirements
+# Hope's Voice requirements
 
 This is the durable product brief. Open issues and `STATUS.md` should stay aligned with it.
 
 ## Mission
 
-BestWishes is a free, $0 AAC (augmentative and alternative communication) app that any family can use. It is an alternative to Proloquo2Go (about $250). A child who needs a talking board should not have to wait on a paid license.
+Hope's Voice is a free, $0 AAC (augmentative and alternative communication) app that any family can use. It is an alternative to Proloquo2Go (about $250). A child who needs a talking board should not have to wait on a paid license.
 
 This project is not affiliated with Proloquo2Go or AssistiveWare. We mention Proloquo2Go only as the paid app this is an alternative to.
 
@@ -64,6 +64,18 @@ The project is maintained largely by automated agents (pstack / poteto-mode) wit
 See `AGENTS.md` and `.agents/skills/maintenance-loop/SKILL.md`.
 
 When a development iPad is reachable from the Mac mini, a watcher should auto-push dev builds with `xcrun devicectl` and retry later if the device is unplugged. That watcher must use a distinct launchd label and must not disturb other watchers on the machine.
+
+
+## Name and identifiers
+
+The product name is **Hope's Voice**. The home-screen display name and user-facing copy use that name.
+
+- GitHub repo: `https://github.com/davidgeorgehope/hopes-voice`
+- iOS bundle ID: `com.davidgeorgehope.hopesvoice` (tests: `com.davidgeorgehope.hopesvoice.tests`)
+- Production API: `https://hopesvoice.davidgeorgehope.com` — this is the only production host. The iOS app reads it from the single constant `APIClient.productionBaseURL`. The host may take a few minutes to go live after DNS or infra changes.
+- Xcode project, target, and scheme names remain `BestWishes` (path `ios/BestWishes/`) so GitHub Actions (`ios.yml`) and the Mac mini auto-push script keep working.
+- The board import format identifier remains `bestwishes.board/v1` for compatibility. On-disk cache folders and UserDefaults keys that already use a `bestwishes.` prefix are left as-is so existing installs do not lose data.
+- Some server paths on the existing host (for example `/etc/bestwishes/env`) may still use the old internal name until infra is renamed.
 
 ## Privacy in this repository
 

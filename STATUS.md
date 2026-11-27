@@ -4,12 +4,13 @@ Short note for weekly check-ins. Agents should update this when something ships.
 
 ## What shipped
 
-- Public repo for BestWishes, MIT-licensed, with the existing SwiftUI iPad app and the FastAPI backend (no secrets, no family data, no screenshots).
+- The product is now **Hope's Voice**. The public repo is [davidgeorgehope/hopes-voice](https://github.com/davidgeorgehope/hopes-voice) (the previous repo URL redirects here), MIT-licensed, with the existing SwiftUI iPad app and the FastAPI backend (no secrets, no family data, no screenshots).
+- Home-screen display name and user-facing copy say Hope's Voice. The iOS bundle ID is `com.davidgeorgehope.hopesvoice` (tests: `com.davidgeorgehope.hopesvoice.tests`).
+- Production API host is [hopesvoice.davidgeorgehope.com](https://hopesvoice.davidgeorgehope.com), configured in the app as the single constant `APIClient.productionBaseURL`. The host may take a few minutes to go live via infra. Apps never hold an xAI key; the backend generates original PECS pictures and spoken audio through the xAI API (Grok models only).
 - iPad app features already in the tree: message bar (speak / clear / backspace), kid vs caregiver mode, folders, edit/hide, offline speech from cache, 2/3/4 column grid, sticky core words (I / want / more / help / stop / go), multiple child profiles (defaults: Child 1 / Child 2), reorder/rename, recents, caregiver search, and caregiver voice-add via on-device speech recognition.
-- Backend API at bestwishes.love (and runnable locally) that generates original PECS pictures and spoken audio through the xAI API (Grok models only). Apps never hold a key.
 - Docs: mission and requirements, API contract, USB device-run notes, board import format (`bestwishes.board/v1`), contributing guide, and a maintenance-loop skill.
 - Product stack is decided: keep SwiftUI for iPhone + iPad; build Android separately in Kotlin + Jetpack Compose against the same API.
-- GitHub Actions CI is green on `main`: [backend](https://github.com/davidgeorgehope/bestwishes-aac/actions/runs/46058134589) (16 pytest, xAI mocked) and [ios](https://github.com/davidgeorgehope/bestwishes-aac/actions/runs/46058134692) (Xcode 26.6, iPad (A16) simulator, `CODE_SIGNING_ALLOWED=NO`). Badges are on the README.
+- GitHub Actions CI runs on `main` for [backend](https://github.com/davidgeorgehope/hopes-voice/actions/workflows/backend.yml) (`pytest`, xAI mocked) and [ios](https://github.com/davidgeorgehope/hopes-voice/actions/workflows/ios.yml) (Xcode, iPad (A16) simulator, `CODE_SIGNING_ALLOWED=NO`). Badges are on the README. The Xcode project, target, and scheme remain `BestWishes` so CI and the Mac mini auto-push script stay wired.
 
 ## What's next
 

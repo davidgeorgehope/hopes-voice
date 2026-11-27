@@ -1,1 +1,1 @@
-"""AAC (bestwishes.love) backend — PECS card generation via xAI."""
+"""Hope's Voice AAC backend — PECS card generation via xAI."""

@@ -96,7 +96,7 @@ final class OfflineBoardTests: XCTestCase {
                 _ = try await api.fetchCards()
                 return true
             } catch let error as APIError {
-                XCTAssertEqual(error.errorDescription, "Could not reach Best Wishes.")
+                XCTAssertEqual(error.errorDescription, "Could not reach Hope's Voice.")
                 return false
             } catch {
                 XCTFail("expected APIError.badURL, got \(error)")
@@ -115,7 +115,7 @@ final class OfflineBoardTests: XCTestCase {
                 _ = try await api.fetchBoard()
                 return true
             } catch let error as APIError {
-                XCTAssertEqual(error.errorDescription, "Could not reach Best Wishes.")
+                XCTAssertEqual(error.errorDescription, "Could not reach Hope's Voice.")
                 return false
             } catch {
                 XCTFail("expected APIError.badURL, got \(error)")
@@ -200,7 +200,7 @@ final class OfflineBoardTests: XCTestCase {
         XCTAssertFalse(store.currentWordSlugs.contains("offline-word"))
         let message = try XCTUnwrap(store.errorMessage)
         XCTAssertFalse(message.isEmpty)
-        XCTAssertEqual(message, "Could not reach Best Wishes.")
+        XCTAssertEqual(message, "Could not reach Hope's Voice.")
         XCTAssertNil(store.banner)
         XCTAssertFalse(store.isAdding)
     }

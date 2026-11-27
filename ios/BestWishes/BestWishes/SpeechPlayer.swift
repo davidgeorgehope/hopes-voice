@@ -168,10 +168,10 @@ private final class PlaybackDone: @unchecked Sendable {
 }
 
 enum SpeakTrace {
-    private static let logger = Logger(subsystem: "love.bestwishes.app", category: "speak")
+    private static let logger = Logger(subsystem: "com.davidgeorgehope.hopesvoice", category: "speak")
 
     static func log(_ message: String) {
-        let line = "BestWishes: \(message)"
+        let line = "Hope's Voice: \(message)"
         print(line)
         fflush(stdout)
         logger.info("\(message, privacy: .public)")

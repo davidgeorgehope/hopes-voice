@@ -1,4 +1,4 @@
-# BestWishes backend
+# Hope's Voice backend
 
 FastAPI service that serves the caregiver board API and generates PECS-style card assets.
 
@@ -7,7 +7,7 @@ FastAPI service that serves the caregiver board API and generates PECS-style car
 
 The iOS and Android apps only play and cache these assets. They never call xAI and never hold a key. All AI stays in this process.
 
-The public API contract is in [`docs/CONTRACT.md`](../docs/CONTRACT.md). The production hostname is `https://bestwishes.love`.
+The public API contract is in [`docs/CONTRACT.md`](../docs/CONTRACT.md). The production hostname is `https://hopesvoice.davidgeorgehope.com`. The host may take a few minutes to go live after DNS or infra changes.
 
 ## Setup
 

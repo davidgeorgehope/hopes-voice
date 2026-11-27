@@ -1,6 +1,6 @@
 # Agents
 
-This repository is maintained largely by automated agents, with tests and CI as the merge gate. Humans are welcome via issues and pull requests.
+This is the Hope's Voice repository. It is maintained largely by automated agents, with tests and CI as the merge gate. Humans are welcome via issues and pull requests.
 
 If you are an agent picking up work here, start with the maintenance loop skill:
 

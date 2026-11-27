@@ -1,6 +1,8 @@
-# BestWishes caregiver API contract (iOS)
+# Hope's Voice caregiver API contract (iOS)
 
-Base URL: `https://bestwishes.love`
+Base URL: `https://hopesvoice.davidgeorgehope.com`
+
+The host may take a few minutes to go live after DNS or infra changes.
 
 Product lock: iPad never calls xAI. All PECS + TTS generation is server-side.
 

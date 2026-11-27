@@ -1,5 +1,5 @@
 """
-AAC backend for bestwishes.love
+AAC backend for Hope's Voice
 
 Caregiver hits this service → xAI generates PECS image + TTS → assets stored
 locally. The iPad app only plays local assets (no AI on device).
@@ -443,7 +443,7 @@ class CardResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 app = FastAPI(
-    title="AAC bestwishes.love backend",
+    title="Hope's Voice API",
     description="Generate PECS-style card assets (image + spoken word) via xAI.",
     version="0.2.0",
 )

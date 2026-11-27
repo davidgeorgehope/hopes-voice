@@ -1,9 +1,9 @@
-# BestWishes
+# Hope's Voice
 
-[![backend](https://github.com/davidgeorgehope/bestwishes-aac/actions/workflows/backend.yml/badge.svg)](https://github.com/davidgeorgehope/bestwishes-aac/actions/workflows/backend.yml)
-[![ios](https://github.com/davidgeorgehope/bestwishes-aac/actions/workflows/ios.yml/badge.svg)](https://github.com/davidgeorgehope/bestwishes-aac/actions/workflows/ios.yml)
+[![backend](https://github.com/davidgeorgehope/hopes-voice/actions/workflows/backend.yml/badge.svg)](https://github.com/davidgeorgehope/hopes-voice/actions/workflows/backend.yml)
+[![ios](https://github.com/davidgeorgehope/hopes-voice/actions/workflows/ios.yml/badge.svg)](https://github.com/davidgeorgehope/hopes-voice/actions/workflows/ios.yml)
 
-A free, open-source AAC (augmentative and alternative communication) app for families. BestWishes is a $0 alternative to Proloquo2Go (about $250). A child who needs a talking board should not have to wait on a paid license.
+A free, open-source AAC (augmentative and alternative communication) app for families. Hope's Voice is a $0 alternative to Proloquo2Go (about $250). A child who needs a talking board should not have to wait on a paid license.
 
 Layout and interaction follow familiar AAC patterns — a message bar, a grid of buttons, folders, core words, and color-by-word-type — so a kid who already uses a paid AAC app can switch without relearning. All symbols are original AI-generated PECS-style pictures. This project is not affiliated with Proloquo2Go or AssistiveWare; we mention Proloquo2Go only as the paid app this is an alternative to.
 
@@ -22,7 +22,7 @@ The iOS app is a SwiftUI project that currently targets **iPad** (iPhone support
 - Use **multiple child profiles** (defaults are Child 1 and Child 2; caregivers will be able to rename them)
 - See **recents**, **search** the open board (caregiver), and **voice-add** a card (caregiver only, on-device speech recognition; kid mode has no microphone)
 
-The live API at [bestwishes.love](https://bestwishes.love) serves the board and generates new cards.
+The live API at [hopesvoice.davidgeorgehope.com](https://hopesvoice.davidgeorgehope.com) serves the board and generates new cards. The host may take a few minutes to go live after DNS or infra changes.
 
 ## Architecture
 
@@ -41,7 +41,7 @@ This is decided, not under consideration:
 
 - **iPhone and iPad:** the existing **SwiftUI** app, kept native. Today it is iPad-only; iPhone is a universal-target and small-screen layout pass.
 - **Android:** a **separate native** app in **Kotlin and Jetpack Compose**, talking to the same backend API in [`docs/CONTRACT.md`](docs/CONTRACT.md). There is no React Native or Expo rewrite.
-- **Backend:** FastAPI on `bestwishes.love` (or your own host).
+- **Backend:** FastAPI on `hopesvoice.davidgeorgehope.com` (or your own host).
 
 ## How to run
 
@@ -53,7 +53,7 @@ On a Mac with Xcode 16+ and an iOS 18 simulator:
 open ios/BestWishes/BestWishes.xcodeproj
 ```
 
-Pick the **BestWishes** scheme and an iPad simulator, then press ⌘R. Point the app at `https://bestwishes.love`, or at a local backend if you change the base URL.
+Pick the **BestWishes** scheme (the Xcode project and scheme names stay BestWishes so existing CI and the Mac mini auto-push script keep working) and an iPad simulator, then press ⌘R. The app talks to `https://hopesvoice.davidgeorgehope.com` via the single constant `APIClient.productionBaseURL`. To use a local backend, pass `-APIBaseURL http://127.0.0.1:8080`.
 
 To run tests:
 
