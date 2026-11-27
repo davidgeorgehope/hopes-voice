@@ -839,28 +839,36 @@ struct ContentView: View {
     }
 
     private var board: some View {
-        ScrollView {
+        Group {
             if store.showsEmptyBoard && !mode.isEditing {
-                emptyBoard
-                    .padding(.top, 48)
+                ScrollView {
+                    emptyBoard
+                        .padding(.top, 48)
+                }
             } else if mode.showsSearchChrome && !store.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                LazyVGrid(columns: chrome.gridItems, spacing: chrome.gridSpacing) {
-                    ForEach(store.filteredCurrentItems) { item in
-                        boardCell(item)
+                ScrollView {
+                    LazyVGrid(columns: chrome.gridItems, spacing: chrome.gridSpacing) {
+                        ForEach(store.filteredCurrentItems) { item in
+                            boardCell(item)
+                        }
                     }
+                    .padding(.horizontal, chrome.gridPadding)
+                    .padding(.vertical, chrome.gridPadding + chrome.highlightStroke)
                 }
-                .padding(.horizontal, chrome.gridPadding)
-                .padding(.vertical, chrome.gridPadding + chrome.highlightStroke)
             } else if store.hasImportedBoard, store.importedPageCount > 1 {
+                // A paged TabView inside a ScrollView collapses to zero height.
                 pagedBoard
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                LazyVGrid(columns: chrome.gridItems, spacing: chrome.gridSpacing) {
-                    ForEach(boardSlots) { slot in
-                        boardSlotCell(slot)
+                ScrollView {
+                    LazyVGrid(columns: chrome.gridItems, spacing: chrome.gridSpacing) {
+                        ForEach(boardSlots) { slot in
+                            boardSlotCell(slot)
+                        }
                     }
+                    .padding(.horizontal, chrome.gridPadding)
+                    .padding(.vertical, chrome.gridPadding + chrome.highlightStroke)
                 }
-                .padding(.horizontal, chrome.gridPadding)
-                .padding(.vertical, chrome.gridPadding + chrome.highlightStroke)
             }
         }
         .refreshable { await store.refresh() }
@@ -879,6 +887,7 @@ struct ContentView: View {
                 }
                 .padding(.horizontal, chrome.gridPadding)
                 .padding(.vertical, chrome.gridPadding + chrome.highlightStroke)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .tag(page)
             }
         }
@@ -1482,14 +1491,16 @@ struct ContentView: View {
         return json.first(where: { $0.lastPathComponent.contains("bestwishes") }) ?? json.first
     }
 
-    private func importBoard(from url: URL) {
+    private func importBoard(from url: URL, showBanner: Bool = true) {
         do {
             try store.importBoard(from: url)
             if let cols = store.importedBoardCols {
                 grid.setColumnCount(cols)
             }
             boardPage = 0
-            store.banner = "Imported \(store.importedDocument?.boards.count ?? 0) boards."
+            if showBanner {
+                store.banner = "Imported \(store.importedDocument?.boards.count ?? 0) boards."
+            }
         } catch {
             importError = error.localizedDescription
         }
@@ -1504,9 +1515,12 @@ struct ContentView: View {
         if let idx = args.firstIndex(of: "-ImportBoard"), args.indices.contains(idx + 1) {
             let path = args[idx + 1]
             Task { @MainActor in
-                importBoard(from: URL(fileURLWithPath: path))
+                importBoard(from: URL(fileURLWithPath: path), showBanner: false)
+                // Let folder-name onChange reset the page before we apply launch hooks.
+                try? await Task.sleep(for: .milliseconds(400))
                 if let folderIdx = args.firstIndex(of: "-OpenFolder"), args.indices.contains(folderIdx + 1) {
                     await runFolderLaunchHooks(folderId: args[folderIdx + 1])
+                    try? await Task.sleep(for: .milliseconds(300))
                 }
                 if let pageIdx = args.firstIndex(of: "-BoardPage"), args.indices.contains(pageIdx + 1),
                    let page = Int(args[pageIdx + 1]) {
@@ -1514,7 +1528,20 @@ struct ContentView: View {
                 }
             }
         } else if let idx = args.firstIndex(of: "-OpenFolder"), args.indices.contains(idx + 1) {
-            Task { await runFolderLaunchHooks(folderId: args[idx + 1]) }
+            Task { @MainActor in
+                await runFolderLaunchHooks(folderId: args[idx + 1])
+                try? await Task.sleep(for: .milliseconds(300))
+                if let pageIdx = args.firstIndex(of: "-BoardPage"), args.indices.contains(pageIdx + 1),
+                   let page = Int(args[pageIdx + 1]) {
+                    boardPage = max(page, 0)
+                }
+            }
+        } else if let pageIdx = args.firstIndex(of: "-BoardPage"), args.indices.contains(pageIdx + 1),
+                  let page = Int(args[pageIdx + 1]) {
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(500))
+                boardPage = max(page, 0)
+            }
         }
         if let idx = args.firstIndex(of: "-AddWord"), args.indices.contains(idx + 1) {
             let word = args[idx + 1]
