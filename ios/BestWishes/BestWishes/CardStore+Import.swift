@@ -65,7 +65,9 @@ extension CardStore {
                 if cell.label.isEmpty == false {
                     nextLabels[editorSlug(itemID)] = cell.label
                 }
-                nextStyles[itemID] = resolvedStyle(for: cell, settings: settings)
+                let style = resolvedStyle(for: cell, settings: settings)
+                nextStyles[itemID] = style
+                nextStyles[editorSlug(itemID)] = style
                 if cell.hidden {
                     hiddenSlugs.insert(editorSlug(itemID))
                 }
@@ -91,11 +93,9 @@ extension CardStore {
                     nextCards.append(Card(word: cell.label, slug: cell.id, imageURL: "", audioURL: ""))
                     memberSlugs.append(cell.id)
                 }
-                if cell.image?.source == "file", let rel = cell.image?.path, let bundle {
-                    if let source = resolveImportImage(path: rel, bundle: bundle) {
-                        _ = cache.importLocalImage(from: source, for: editorSlug(itemID))
-                        bumpImage(editorSlug(itemID))
-                    }
+                if let bundle, let source = resolveCellImage(cell, bundle: bundle) {
+                    _ = cache.importLocalImage(from: source, for: editorSlug(itemID))
+                    bumpImage(editorSlug(itemID))
                 }
             }
             nextPositions[key] = folderMap
@@ -339,6 +339,38 @@ extension CardStore {
         default:
             return CellStyle(backgroundHex: writtenBg, borderHex: border)
         }
+    }
+
+    func resolveCellImage(_ cell: BoardImportCell, bundle: URL) -> URL? {
+        if cell.image?.source == "file", let rel = cell.image?.path, !rel.isEmpty {
+            return resolveImportImage(path: rel, bundle: bundle)
+        }
+        if cell.image?.source == "generate" {
+            return resolveGeneratedImage(cellID: cell.id, bundle: bundle)
+        }
+        return nil
+    }
+
+    /// Private originals for `generate` cells, held next to the import file (never in git).
+    func resolveGeneratedImage(cellID: String, bundle: URL) -> URL? {
+        let names = ["\(cellID).png", "\(cellID).jpg", "\(cellID).jpeg", "\(cellID).webp"]
+        var dirs = [
+            bundle.appendingPathComponent("generated"),
+            bundle.appendingPathComponent("images"),
+            bundle,
+        ]
+        if let children = try? FileManager.default.contentsOfDirectory(at: bundle, includingPropertiesForKeys: nil) {
+            dirs.append(contentsOf: children.filter(\.hasDirectoryPath))
+        }
+        for dir in dirs {
+            for name in names {
+                let url = dir.appendingPathComponent(name)
+                if FileManager.default.fileExists(atPath: url.path) {
+                    return url
+                }
+            }
+        }
+        return nil
     }
 
     func resolveImportImage(path: String, bundle: URL) -> URL? {

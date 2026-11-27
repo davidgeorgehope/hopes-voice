@@ -22,7 +22,9 @@ extension CardStore {
     }
 
     func style(for item: BoardItem) -> CellStyle {
-        styleOverlays[item.id] ?? .default
+        styleOverlays[item.id]
+            ?? styleOverlays[editorSlug(item.id)]
+            ?? .default
     }
 
     func style(forCard slug: String) -> CellStyle {

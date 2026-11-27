@@ -28,7 +28,8 @@ struct EditLockButton: View {
     }
 
     private var kidProofControl: some View {
-        label(title: "Edit", systemImage: "lock.fill", emphasized: false, faded: true, hint: "Hold to edit")
+        // No on-screen hint text in kid mode; the control stays low-contrast and hold-to-unlock.
+        label(title: "Edit", systemImage: "lock.fill", emphasized: false, faded: true)
             .overlay {
                 UnlockHoldRecognizer(
                     oneFingerDuration: CaregiverMode.unlockHoldDuration,

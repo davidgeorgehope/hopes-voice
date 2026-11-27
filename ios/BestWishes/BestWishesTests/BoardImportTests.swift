@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import BestWishes
 
 final class BoardImportTests: XCTestCase {
@@ -236,5 +237,47 @@ final class BoardImportTests: XCTestCase {
         let settings = ProfileSettings.fromImport(document.profile)
         XCTAssertEqual(settings.voice.voiceId, "com.apple.voice.compact.en-US.Samantha")
         XCTAssertEqual(settings.voice.rate, 1.0, accuracy: 0.001)
+    }
+
+    @MainActor
+    func testImportedFolderAndWordStylesUseTheCellId() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("bw-import-style-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let store = CardStore(cache: AssetCache(root: root), player: SpeechPlayer())
+        try store.importBoard(from: sampleURL())
+
+        let help = store.slots(rows: 6, columns: 6, editing: false)
+            .compactMap(\.item)
+            .first { $0.id == "help" }
+        let want = store.slots(rows: 6, columns: 6, editing: false)
+            .compactMap(\.item)
+            .first { $0.id == "want" || $0.id == "folder:want" }
+        XCTAssertEqual(store.style(for: help!).backgroundHex, "FFE5E6")
+        XCTAssertEqual(store.style(for: help!).borderHex, "CB0001")
+        XCTAssertNotNil(want)
+        XCTAssertEqual(store.style(for: want!).borderHex, "66D866")
+        XCTAssertEqual(store.style(for: want!).backgroundHex, "FFFFFF")
+    }
+
+    @MainActor
+    func testGenerateCellPicksUpALocalOriginalNextToTheFile() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("bw-import-pic-\(UUID().uuidString)", isDirectory: true)
+        let bundle = root.appendingPathComponent("bundle", isDirectory: true)
+        let generated = bundle.appendingPathComponent("generated", isDirectory: true)
+        try FileManager.default.createDirectory(at: generated, withIntermediateDirectories: true)
+        let dest = bundle.appendingPathComponent("sample.board.json")
+        try Data(contentsOf: sampleURL()).write(to: dest)
+
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 8, height: 8))
+        let image = renderer.image { ctx in
+            UIColor.red.setFill()
+            ctx.fill(CGRect(x: 0, y: 0, width: 8, height: 8))
+        }
+        let png = generated.appendingPathComponent("help.png")
+        try image.pngData()!.write(to: png)
+
+        let store = CardStore(cache: AssetCache(root: root.appendingPathComponent("cache")), player: SpeechPlayer())
+        try store.importBoard(from: dest)
+        XCTAssertNotNil(store.image(for: Card(word: "help", slug: "help", imageURL: "", audioURL: "")), "the local original should be cached under the cell id")
     }
 }

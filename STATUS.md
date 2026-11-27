@@ -19,7 +19,7 @@ Short note for weekly check-ins. Agents should update this when something ships.
 
 ## What's next
 
-- Remaining Proloquo2Go-familiar polish: visually distinct folder buttons (tab shape), Fitzgerald part-of-speech colors (#7), Generate on an existing button does not yet refresh a picture that is already on the server, and short folders are not yet bottom-aligned. See issues #1, #3, and #7, and `docs/REQUIREMENTS.md`.
+- Remaining Proloquo2Go-familiar polish: Fitzgerald part-of-speech colors (#7), and Generate on an existing button does not yet refresh a picture that is already on the server. Folder buttons use a tab silhouette, short folders keep empty rows so cells on the last rows sit at the bottom, and the kid-mode Edit control no longer shows on-screen hint text. See issues #1, #3, and #7, and `docs/REQUIREMENTS.md`.
 - Finish recreating the first family's existing setup from the *private* import file (held outside this repo): generate original pictures for the remaining stock-symbol cells (after owner approval of the remaining batch), and close any layout differences found in side-by-side screenshots.
 - An Android app scaffold and an Android CI build job once the Kotlin/Compose scaffold exists.
 - Store-readiness work for a free App Store and Google Play listing (privacy policy, COPPA / kid-safe handling, accessibility, signing). Paid fees need owner approval.
