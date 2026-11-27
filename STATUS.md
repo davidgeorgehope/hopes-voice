@@ -9,7 +9,7 @@ Short note for weekly check-ins. Agents should update this when something ships.
 - Backend API at bestwishes.love (and runnable locally) that generates original PECS pictures and spoken audio through the xAI API (Grok models only). Apps never hold a key.
 - Docs: mission and requirements, API contract, USB device-run notes, board import format (`bestwishes.board/v1`), contributing guide, and a maintenance-loop skill.
 - Product stack is decided: keep SwiftUI for iPhone + iPad; build Android separately in Kotlin + Jetpack Compose against the same API.
-- GitHub Actions CI: `backend.yml` (ubuntu, pytest, xAI mocked) and `ios.yml` (macos-latest, newest Xcode, iPad simulator, `CODE_SIGNING_ALLOWED=NO`). Badges are on the README.
+- GitHub Actions CI is green on `main`: [backend](https://github.com/davidgeorgehope/bestwishes-aac/actions/runs/46058134589) (16 pytest, xAI mocked) and [ios](https://github.com/davidgeorgehope/bestwishes-aac/actions/runs/46058134692) (Xcode 26.6, iPad (A16) simulator, `CODE_SIGNING_ALLOWED=NO`). Badges are on the README.
 
 ## What's next
 
