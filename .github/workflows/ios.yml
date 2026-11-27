@@ -1,0 +1,129 @@
+name: ios
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: xcodebuild test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest Xcode and require iOS 18+ SDK
+        run: |
+          set -euo pipefail
+          echo "Available Xcode apps:"
+          ls -1d /Applications/Xcode*.app 2>/dev/null || true
+
+          newest=""
+          newest_ver=""
+          for app in /Applications/Xcode_*.app /Applications/Xcode.app; do
+            [ -d "$app" ] || continue
+            ver=$(plutil -extract CFBundleShortVersionString raw "$app/Contents/Info.plist" 2>/dev/null || true)
+            if [ -z "$ver" ]; then
+              continue
+            fi
+            echo "  $app ($ver)"
+            if [ -z "$newest_ver" ] || [ "$(printf '%s\n%s\n' "$newest_ver" "$ver" | sort -V | tail -1)" = "$ver" ]; then
+              # On equal versions, prefer the explicit Xcode_*.app path last-wins is fine.
+              if [ "$ver" = "$newest_ver" ] && [ "$app" = "/Applications/Xcode.app" ]; then
+                continue
+              fi
+              newest="$app"
+              newest_ver="$ver"
+            fi
+          done
+
+          if [ -z "$newest" ]; then
+            echo "No Xcode.app found on this runner."
+            exit 1
+          fi
+
+          echo "Selecting $newest ($newest_ver)"
+          sudo xcode-select -s "$newest/Contents/Developer"
+          xcode-select -p
+          xcodebuild -version
+          echo "XCODE_VERSION=$newest_ver" >> "$GITHUB_ENV"
+
+          echo "Installed iOS SDKs:"
+          xcodebuild -showsdks
+
+          sdk_ver=$(xcodebuild -showsdks | sed -n 's/.*-sdk iphoneos//p' | sort -V | tail -1)
+          if [ -z "$sdk_ver" ]; then
+            echo "No iphoneos SDK found after selecting $newest."
+            exit 1
+          fi
+          echo "Newest iphoneos SDK: $sdk_ver"
+          required="18.0"
+          lowest=$(printf '%s\n%s\n' "$required" "$sdk_ver" | sort -V | head -1)
+          if [ "$lowest" != "$required" ]; then
+            echo "::error::Project IPHONEOS_DEPLOYMENT_TARGET is $required, but the newest Xcode on this runner ($newest_ver) only has iOS SDK $sdk_ver. Not lowering the deployment target."
+            exit 1
+          fi
+
+      - name: Pick an iPad simulator, then build and test
+        run: |
+          set -euo pipefail
+          python3 << 'PY'
+          import json, os, subprocess, sys
+
+          def run(cmd, **kw):
+              print("+", " ".join(cmd), flush=True)
+              return subprocess.run(cmd, check=True, **kw)
+
+          data = json.loads(
+              subprocess.check_output(["xcrun", "simctl", "list", "devices", "available", "-j"])
+          )
+          prefer, other = [], []
+          for runtime, devices in data.get("devices", {}).items():
+              if "iOS" not in runtime and "iPadOS" not in runtime:
+                  continue
+              for d in devices:
+                  if not d.get("isAvailable", True):
+                      continue
+                  name = d.get("name", "")
+                  if "iPad" not in name:
+                      continue
+                  item = (name, d["udid"], runtime)
+                  if "A16" in name:
+                      prefer.append(item)
+                  else:
+                      other.append(item)
+          pick = prefer or other
+          if not pick:
+              print("No available iPad simulator. Devices:", file=sys.stderr)
+              subprocess.run(["xcrun", "simctl", "list", "devices", "available"], check=False)
+              sys.exit(1)
+          name, udid, runtime = pick[0]
+          print(f"Using simulator: {name} ({udid}) runtime={runtime}", flush=True)
+          boot = subprocess.run(["xcrun", "simctl", "boot", udid])
+          if boot.returncode not in (0,):
+              # Already booted is fine (exit 149 / message).
+              print(f"simctl boot exited {boot.returncode} (ok if already booted)", flush=True)
+
+          dest = f"platform=iOS Simulator,id={udid}"
+          cmd = [
+              "xcodebuild", "test",
+              "-project", "ios/BestWishes/BestWishes.xcodeproj",
+              "-scheme", "BestWishes",
+              "-configuration", "Debug",
+              "-destination", dest,
+              "-derivedDataPath", "ios/DerivedData",
+              "CODE_SIGNING_ALLOWED=NO",
+              "-skipPackagePluginValidation",
+          ]
+          print("+", " ".join(cmd), flush=True)
+          sys.exit(subprocess.call(cmd))
+          PY

@@ -28,7 +28,9 @@ from pydantic import BaseModel, Field
 # ---------------------------------------------------------------------------
 
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
-DATA_ROOT = BACKEND_ROOT / "data"
+# Tests and local sandboxes can redirect generated assets with BESTWISHES_DATA_DIR.
+_data_override = os.environ.get("BESTWISHES_DATA_DIR", "").strip()
+DATA_ROOT = Path(_data_override).expanduser().resolve() if _data_override else BACKEND_ROOT / "data"
 DATA_DIR = DATA_ROOT / "cards"
 SYSTEM_DIR = DATA_ROOT / "system"
 BOARD_PATH = DATA_ROOT / "board.json"

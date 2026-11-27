@@ -9,12 +9,13 @@ Short note for weekly check-ins. Agents should update this when something ships.
 - Backend API at bestwishes.love (and runnable locally) that generates original PECS pictures and spoken audio through the xAI API (Grok models only). Apps never hold a key.
 - Docs: mission and requirements, API contract, USB device-run notes, board import format (`bestwishes.board/v1`), contributing guide, and a maintenance-loop skill.
 - Product stack is decided: keep SwiftUI for iPhone + iPad; build Android separately in Kotlin + Jetpack Compose against the same API.
+- GitHub Actions CI: `backend.yml` (ubuntu, pytest, xAI mocked) and `ios.yml` (macos-latest, newest Xcode, iPad simulator, `CODE_SIGNING_ALLOWED=NO`). Badges are on the README.
 
 ## What's next
 
 - Milestone 1: configurable settings (grid, colors, voice, message bar), a validated board importer, and recreating one child's existing setup for the first family from a *private* import file that never enters this repo.
 - iPhone support (universal target, small-screen layout) and an Android app scaffold.
-- GitHub Actions CI for backend tests, iOS `xcodebuild test`, and the Android build (follow-up; not in the tree yet).
+- An Android CI build job once the Kotlin/Compose scaffold exists.
 - Store-readiness work for a free App Store and Google Play listing (privacy policy, COPPA / kid-safe handling, accessibility, signing). Paid fees need owner approval.
 - Folder-from-prompt generation, and an auto-push-to-device watcher on the Mac mini when an iPad is reachable.
 

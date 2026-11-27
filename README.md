@@ -1,5 +1,8 @@
 # BestWishes
 
+[![backend](https://github.com/davidgeorgehope/bestwishes-aac/actions/workflows/backend.yml/badge.svg)](https://github.com/davidgeorgehope/bestwishes-aac/actions/workflows/backend.yml)
+[![ios](https://github.com/davidgeorgehope/bestwishes-aac/actions/workflows/ios.yml/badge.svg)](https://github.com/davidgeorgehope/bestwishes-aac/actions/workflows/ios.yml)
+
 A free, open-source AAC (augmentative and alternative communication) app for families. BestWishes is a $0 alternative to Proloquo2Go (about $250). A child who needs a talking board should not have to wait on a paid license.
 
 Layout and interaction follow familiar AAC patterns — a message bar, a grid of buttons, folders, core words, and color-by-word-type — so a kid who already uses a paid AAC app can switch without relearning. All symbols are original AI-generated PECS-style pictures. This project is not affiliated with Proloquo2Go or AssistiveWare; we mention Proloquo2Go only as the paid app this is an alternative to.
@@ -74,6 +77,15 @@ export XAI_API_KEY=...   # your key; never commit it
 uvicorn app.main:app --host 0.0.0.0 --port 8080
 ```
 
+Tests (no `XAI_API_KEY` required; xAI calls are mocked):
+
+```bash
+cd backend
+source .venv/bin/activate
+pip install -r requirements.txt pytest
+pytest
+```
+
 More detail is in [`backend/README.md`](backend/README.md).
 
 ## Roadmap
@@ -83,7 +95,7 @@ Work is tracked as GitHub issues. The near-term list:
 1. **Milestone 1** — configurable settings, a `bestwishes.board/v1` importer, and using a *private* import file (never in this repo) to recreate one child's existing setup for the first family.
 2. **iPhone support** in the SwiftUI app (universal target, layouts for small screens).
 3. **Android** scaffold in Kotlin / Compose against the same API, then feature parity.
-4. **CI** (GitHub Actions for backend tests, iOS `xcodebuild test`, and the Android build) — coming in a follow-up; not in the tree yet.
+4. **CI** is in the tree for backend `pytest` and iOS `xcodebuild test` (see the badges above). An Android build job will join once that app is scaffolded.
 5. **Store readiness** for a free App Store and Google Play listing (privacy policy, COPPA / kid-safe data handling, accessibility, signing). Paid fees need the owner's approval.
 6. Folder-from-prompt generation, rate limits so free AI stays sustainable, open-symbol fallbacks, on-device TTS, localization, and an auto-push-to-device watcher.
 

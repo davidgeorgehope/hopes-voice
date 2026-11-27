@@ -11,14 +11,14 @@ The product brief is [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md). The API con
 ## How we merge
 
 - Work in a branch, then open a pull request into `main`.
-- Merge only when tests are green. CI is the gate once GitHub Actions lands; until then, run what you can locally and say what you ran.
+- Merge only when tests are green. GitHub Actions (`backend.yml` and `ios.yml`) is the merge gate on pushes to `main` and on pull requests.
 - Do not leave hanging pull requests. If work is blocked, say so on the issue and close or convert the PR rather than parking it.
 - Keep commits focused. Prefer small vertical slices over large mixed diffs.
 
 ## Tests
 
 - **iOS:** `xcodebuild test -project ios/BestWishes/BestWishes.xcodeproj -scheme BestWishes -destination 'platform=iOS Simulator,name=iPad (A16)'` (adjust the simulator name if needed).
-- **Backend:** add and run `pytest` under `backend/` as tests land.
+- **Backend:** `cd backend && pip install -r requirements.txt pytest && pytest`. xAI is mocked; do not set `XAI_API_KEY`.
 - **Android:** once the scaffold exists, include a debug build / unit tests in the PR.
 - For UI changes on iOS, attach a Simulator screenshot in the PR (no real child names or family photos).
 

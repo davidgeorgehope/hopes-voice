@@ -73,3 +73,14 @@ python scripts/generate_card.py "ice cream"
 | GET | `/system/folder.png` | Static folder icon |
 
 See `docs/CONTRACT.md` for JSON shapes.
+
+## Tests
+
+```bash
+cd backend
+source .venv/bin/activate
+pip install -r requirements.txt pytest
+pytest
+```
+
+Tests use a temporary `BESTWISHES_DATA_DIR` and mock xAI image/TTS calls. They must pass without a real `XAI_API_KEY`.
