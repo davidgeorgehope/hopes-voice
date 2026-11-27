@@ -19,6 +19,8 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+
+from app.image_trim import trim_and_pad_file
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -49,10 +51,12 @@ TTS_LANGUAGE = "en"
 # The word label is rendered separately in the AAC app UI.
 PECS_PROMPT_TEMPLATE = (
     "PECS AAC communication card symbol for a child: a simple, clear, "
-    "photo-realistic icon of {word}, centered on a plain white background. "
-    "High contrast, easy to recognize at a glance, one single concept only. "
-    "No text, no letters, no words, no labels, no watermark, no border frame, "
-    "no collage, no multiple objects. Clean educational PECS-style symbol."
+    "photo-realistic icon of {word}. The subject fills about 85 percent of "
+    "the frame, centered on a plain white background, with only a thin white "
+    "margin. Tight crop, subject large in the frame. High contrast, easy to "
+    "recognize at a glance, one single concept only. No text, no letters, no "
+    "words, no labels, no watermark, no border frame, no collage, no multiple "
+    "objects. Clean educational PECS-style symbol."
 )
 
 # ---------------------------------------------------------------------------
@@ -364,6 +368,9 @@ async def generate_image(client: httpx.AsyncClient, word: str, dest: Path) -> di
         dest.write_bytes(base64.b64decode(b64))
     else:
         raise HTTPException(status_code=502, detail="Image response missing url and b64_json")
+    # Crop the common "tiny subject on a huge white square" framing, then
+    # re-pad to a thin consistent margin so the symbol fills the card cell.
+    trim_and_pad_file(dest)
     return {"bytes": dest.stat().st_size, "prompt": prompt, "model": IMAGE_MODEL}
 
 
