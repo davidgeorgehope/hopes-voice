@@ -31,9 +31,17 @@ A real child's file is private family data: it never goes in git. It's loaded on
   "colorScheme": "fitzgerald",         // or "custom" with "colors" below
   "colors": { "noun": "#FFD966", "verb": "#93C47D", "adjective": "#6FA8DC",
               "pronoun": "#FFE599", "social": "#F4CCCC", "misc": "#FFFFFF" },
-  "coreRow": ["i","want","more","help","stop","go"]   // optional sticky row (cell ids)
+  "coreRow": ["i","want","more","help","stop","go"],  // optional sticky row (cell ids); omit or [] to hide it
+  "background": "#000000",            // optional board background
+  "colorMode": "border"               // optional: border | fill | custom (use each cell's bg and border)
 }
 ```
+
+Optional message-bar keys on `profile.messageBar`: `style` (`standard` or `compactBlue`), `background` (e.g. `#0000CB`), `textAboveImage`, `deleteLast`.
+
+Optional `folderBehavior.addFolderWordToBar` sets the default for folder cells that omit `addToMessage`. A taller board (more rows than `profile.grid.rows`) pages in steps of the grid height.
+
+The app also ships `backend/scripts/validate_board.py` for the same all-or-nothing checks from a checkout.
 
 ## boards[]
 ```json

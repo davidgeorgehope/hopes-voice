@@ -10,19 +10,24 @@ final class CardStore {
     var cards: [Card] = []
     var grouping = BoardGrouping.empty
     /// Local overlay: slugs hidden from every board/folder view until Unhide.
-    private(set) var hiddenSlugs: Set<String> = []
+    var hiddenSlugs: Set<String> = []
     /// Local overlay: ordered `BoardItem.id`s per folder (empty key = root).
-    private(set) var orderOverlays: [String: [String]] = [:]
+    var orderOverlays: [String: [String]] = [:]
     /// Local overlay: display labels keyed by card slug or folder id.
-    private(set) var labelOverlays: [String: String] = [:]
+    var labelOverlays: [String: String] = [:]
     var positionOverlays: [String: [String: GridCoord]] = [:]
     var speakOverlays: [String: String] = [:]
     var styleOverlays: [String: CellStyle] = [:]
     var messageBar: MessageBarSettings = .default
+    var settings: ProfileSettings = .default
+    var importedDocument: BoardImportDocument?
+    var importActions: [String: String] = [:]
+    var importTargets: [String: String] = [:]
+    var importAddToMessage: [String: Bool] = [:]
     /// Spoken slugs, most-recent-first, unique, capped at `recentsLimit`.
     private(set) var recentSlugs: [String] = []
     /// Folder ids from root to the open board. Empty means the root board.
-    private(set) var folderPath: [String] = []
+    var folderPath: [String] = []
     var isLoading = false
     var isAdding = false
     var addingWord: String?
@@ -45,18 +50,30 @@ final class CardStore {
 
     /// Folder name for chrome. `nil` on the root board. Uses the display overlay when set.
     var currentFolderName: String? {
+        if let title = importedBoardTitle, !isAtRoot { return title }
         guard let folder = currentFolder else { return nil }
         return displayLabel(for: folder)
     }
 
     var currentFolder: BoardFolder? {
         guard let id = folderPath.last else { return nil }
-        return grouping.folder(id: id)
+        if let folder = grouping.folder(id: id) { return folder }
+        if let document = importedDocument,
+           let board = document.boards.first(where: { $0.id == id }) {
+            return BoardFolder(id: board.id, name: board.title, parentId: nil, memberSlugs: [])
+        }
+        return nil
     }
 
     /// Items on the open board after hide, then the local order overlay.
     /// Search does not change this list — Edit reorder and hide read it.
     var currentItems: [BoardItem] {
+        if let document = importedDocument, let board = currentImportedBoard(in: document) {
+            return board.cells.compactMap { cell in
+                if cell.hidden { return nil }
+                return boardItem(from: cell)
+            }
+        }
         let parentId = currentFolder?.id
         return Self.applyingOrder(membershipItems(parentId: parentId), saved: orderOverlays[Self.orderKey(folderId: parentId)])
     }
@@ -97,7 +114,8 @@ final class CardStore {
     /// Core strip in display order. Drawn from the full vocabulary, not `currentItems`,
     /// so opening Food (or any folder) cannot hide the six cores.
     var coreCards: [Card] {
-        CoreVocabulary.resolved(from: cards)
+        guard settings.showCoreRow else { return [] }
+        return CoreVocabulary.resolved(from: cards)
     }
 
     var coreSlugs: [String] {
@@ -109,7 +127,8 @@ final class CardStore {
 
     /// Recents in display order (most recent first). Missing vocabulary is skipped.
     var recentCards: [Card] {
-        recentSlugs.compactMap { slug in
+        guard settings.showRecents else { return [] }
+        return recentSlugs.compactMap { slug in
             cards.first { $0.slug == slug }
         }
     }
@@ -136,8 +155,15 @@ final class CardStore {
         speakOverlays = cache.loadSpeakOverlays(for: profile)
         styleOverlays = cache.loadStyleOverlays(for: profile)
         messageBar = cache.loadMessageBarSettings(for: profile)
+        settings = cache.loadProfileSettings(for: profile)
         recentSlugs = cache.loadRecents(for: profile)
         folderPath = clampedFolderPath(cache.loadFolderPath(for: profile))
+        loadImportedBoardIfPresent()
+        if hasImportedBoard {
+            let cached = cache.loadCachedCards()
+            if !cached.isEmpty { cards = cached }
+            messageBar = settings.messageBar
+        }
     }
 
     /// Same path the caregiver profile switcher uses. Reloads this profile's
@@ -153,8 +179,16 @@ final class CardStore {
         speakOverlays = cache.loadSpeakOverlays(for: profile)
         styleOverlays = cache.loadStyleOverlays(for: profile)
         messageBar = cache.loadMessageBarSettings(for: profile)
+        settings = cache.loadProfileSettings(for: profile)
         recentSlugs = cache.loadRecents(for: profile)
         folderPath = clampedFolderPath(cache.loadFolderPath(for: profile))
+        loadImportedBoardIfPresent()
+        if hasImportedBoard {
+            let cached = cache.loadCachedCards()
+            if !cached.isEmpty { cards = cached }
+            grouping = cache.loadGrouping() ?? grouping
+            messageBar = settings.messageBar
+        }
         strip.clear()
         lastSpokenSlug = nil
         applyProbeHides()
@@ -172,6 +206,7 @@ final class CardStore {
             cards = cached
         }
         applyProbeHides()
+        if hasImportedBoard { return }
         await refresh()
         await ensureCoreVocabulary()
     }
@@ -187,6 +222,7 @@ final class CardStore {
     }
 
     func refresh() async {
+        if hasImportedBoard { return }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
@@ -371,6 +407,7 @@ final class CardStore {
 
     /// Same path the board cells use: words append, folders navigate.
     func select(_ item: BoardItem) {
+        if selectImported(item) { return }
         switch item {
         case .word(let card):
             tap(card)
@@ -493,7 +530,12 @@ final class CardStore {
         persistSnapshot()
     }
 
+    func applyVoiceSettings() {
+        player.voiceSettings = settings.voice
+    }
+
     func preview(_ card: Card) {
+
         lastSpokenSlug = card.slug
         player.speak(card: card, spokenText: speakText(for: card), cache: cache, api: api)
         Task { await cache.ensureAssets(for: card, api: api) }
@@ -615,7 +657,7 @@ final class CardStore {
         grouping = next
     }
 
-    private func persistSnapshot() {
+    func persistSnapshot() {
         cache.saveCards(cards)
         cache.saveGrouping(grouping)
     }
@@ -628,7 +670,7 @@ final class CardStore {
         cache.saveOrderOverlays(orderOverlays, for: activeProfile)
     }
 
-    private func persistLabels() {
+    func persistLabels() {
         cache.saveLabelOverlays(labelOverlays, for: activeProfile)
     }
 
@@ -639,7 +681,7 @@ final class CardStore {
     /// Counting events: grid tap, core-row tap, Recents tap (via `tap`), and
     /// sentence-strip Speak. Folder taps do not count. Unique by slug, insert
     /// front, cap `recentsLimit`. Speak of `[I, want, juice]` → `juice, want, i`.
-    private func recordSpoken(slugs: [String]) {
+    func recordSpoken(slugs: [String]) {
         var next = recentSlugs
         for slug in slugs where !slug.isEmpty {
             next.removeAll { $0 == slug }
@@ -652,7 +694,7 @@ final class CardStore {
         persistRecents()
     }
 
-    private func persistFolderPath() {
+    func persistFolderPath() {
         cache.saveFolderPath(folderPath, for: activeProfile)
     }
 

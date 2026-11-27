@@ -1,0 +1,101 @@
+{
+  "format": "bestwishes.board/v1",
+  "source": "synthetic-test",
+  "transcriptNote": "public sample — no family data",
+  "profile": {
+    "displayName": "Child 1",
+    "homeBoard": "home",
+    "grid": { "rows": 4, "cols": 6 },
+    "voice": { "engine": "system", "voiceId": "com.apple.voice.compact.en-US.Samantha", "rate": 1.0, "pitch": 1.0 },
+    "messageBar": {
+      "enabled": true,
+      "speakOnTap": true,
+      "speakOnBarTap": true,
+      "clearAfterSpeak": true,
+      "style": "compactBlue",
+      "background": "#0000CB",
+      "textAboveImage": true,
+      "deleteLast": true
+    },
+    "folderBehavior": { "returnHomeAfterSelection": true },
+    "colorScheme": "custom",
+    "colors": {},
+    "coreRow": [],
+    "background": "#000000",
+    "colorMode": "border"
+  },
+  "boards": [
+    {
+      "id": "home",
+      "title": "Home",
+      "rows": 6,
+      "cols": 6,
+      "cells": [
+        {
+          "id": "want",
+          "row": 0,
+          "col": 0,
+          "type": "folder",
+          "label": "I want",
+          "target": "food",
+          "bg": "#FFFFFF",
+          "border": "#66D866",
+          "addToMessage": true,
+          "image": { "source": "generate", "prompt": "I want" }
+        },
+        {
+          "id": "help",
+          "row": 0,
+          "col": 1,
+          "type": "word",
+          "label": "help",
+          "pos": "misc",
+          "bg": "#FFE5E6",
+          "border": "#CB0001",
+          "image": { "source": "generate", "prompt": "help" }
+        },
+        {
+          "id": "things",
+          "row": 1,
+          "col": 2,
+          "type": "folder",
+          "label": "Things",
+          "target": "food",
+          "bg": "#FFFFFF",
+          "border": "#FE8001",
+          "image": { "source": "generate", "prompt": "Things" }
+        },
+        {
+          "id": "clear",
+          "row": 3,
+          "col": 0,
+          "type": "action",
+          "label": "Clear Message",
+          "action": "clear",
+          "bg": "#000000",
+          "border": "#000000",
+          "image": { "source": "none" }
+        }
+      ]
+    },
+    {
+      "id": "food",
+      "title": "Food",
+      "rows": 4,
+      "cols": 6,
+      "cells": [
+        {
+          "id": "water",
+          "row": 0,
+          "col": 1,
+          "type": "word",
+          "label": "water",
+          "speak": "water",
+          "bg": "#FFFFFF",
+          "border": "#66C0FF",
+          "image": { "source": "generate", "prompt": "water" }
+        }
+      ]
+    }
+  ]
+}
