@@ -1505,7 +1505,16 @@ struct ContentView: View {
             let path = args[idx + 1]
             Task { @MainActor in
                 importBoard(from: URL(fileURLWithPath: path))
+                if let folderIdx = args.firstIndex(of: "-OpenFolder"), args.indices.contains(folderIdx + 1) {
+                    await runFolderLaunchHooks(folderId: args[folderIdx + 1])
+                }
+                if let pageIdx = args.firstIndex(of: "-BoardPage"), args.indices.contains(pageIdx + 1),
+                   let page = Int(args[pageIdx + 1]) {
+                    boardPage = max(page, 0)
+                }
             }
+        } else if let idx = args.firstIndex(of: "-OpenFolder"), args.indices.contains(idx + 1) {
+            Task { await runFolderLaunchHooks(folderId: args[idx + 1]) }
         }
         if let idx = args.firstIndex(of: "-AddWord"), args.indices.contains(idx + 1) {
             let word = args[idx + 1]
@@ -1519,10 +1528,6 @@ struct ContentView: View {
                     store.tap(card)
                 }
             }
-        }
-        if let idx = args.firstIndex(of: "-OpenFolder"), args.indices.contains(idx + 1) {
-            let folderId = args[idx + 1]
-            Task { await runFolderLaunchHooks(folderId: folderId) }
         }
         if let idx = args.firstIndex(of: "-StripAppend"), args.indices.contains(idx + 1) {
             let slugs = args[idx + 1]

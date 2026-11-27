@@ -206,4 +206,35 @@ final class BoardImportTests: XCTestCase {
         XCTAssertEqual(store.currentWordSlugs, ["want"])
         XCTAssertEqual(store.settings.colorMode, ProfileSettings.default.colorMode)
     }
+
+    func testOmittedBarStyleIsInferredFromMessageBarLook() throws {
+        var object = try JSONSerialization.jsonObject(with: sampleData()) as! [String: Any]
+        var profile = object["profile"] as! [String: Any]
+        var bar = profile["messageBar"] as! [String: Any]
+        bar.removeValue(forKey: "style")
+        bar.removeValue(forKey: "background")
+        bar.removeValue(forKey: "textAboveImage")
+        profile["messageBar"] = bar
+        profile["messageBarLook"] = "solid blue #0000CB with a delete-last X on the right"
+        profile["textBelowImages"] = false
+        object["profile"] = profile
+        let data = try JSONSerialization.data(withJSONObject: object)
+        let document = try BoardImport.decode(data)
+        let settings = ProfileSettings.fromImport(document.profile)
+        XCTAssertEqual(settings.messageBar.style, "compactBlue")
+        XCTAssertEqual(settings.messageBar.backgroundHex, "0000CB")
+        XCTAssertTrue(settings.messageBar.textAboveImage)
+    }
+
+    func testProprietarySystemVoiceIsMappedToSamantha() throws {
+        var object = try JSONSerialization.jsonObject(with: sampleData()) as! [String: Any]
+        var profile = object["profile"] as! [String: Any]
+        profile["voice"] = ["engine": "system", "voiceId": "proprietary.voice.bvcu", "rate": 1.0, "pitch": 1.0]
+        object["profile"] = profile
+        let data = try JSONSerialization.data(withJSONObject: object)
+        let document = try BoardImport.decode(data)
+        let settings = ProfileSettings.fromImport(document.profile)
+        XCTAssertEqual(settings.voice.voiceId, "com.apple.voice.compact.en-US.Samantha")
+        XCTAssertEqual(settings.voice.rate, 1.0, accuracy: 0.001)
+    }
 }
