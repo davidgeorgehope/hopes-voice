@@ -23,6 +23,8 @@ struct ButtonEditorDraft: Equatable, Identifiable {
     var currentImage: UIImage?
     /// For a folder button, the board to open. Nil means create a new folder named `label`.
     var folderLinkID: String?
+    /// Hidden buttons keep their seat and their edits but stay off the child's board.
+    var isHidden: Bool = false
 
     var isNew: Bool { existingID == nil }
 
@@ -60,7 +62,6 @@ struct ButtonEditorSheet: View {
     var errorMessage: String? = nil
     var onSave: () -> Void
     var onCancel: () -> Void
-    var onHide: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
 
     @State private var photoItem: PhotosPickerItem?
@@ -90,6 +91,7 @@ struct ButtonEditorSheet: View {
                             .accessibilityIdentifier("editorError")
                     }
                     if !draft.isNew {
+                        visibilityToggle
                         editorDangerActions
                     }
                 }
@@ -265,17 +267,23 @@ struct ButtonEditorSheet: View {
         }
     }
 
+    /// Hide without deleting: the button keeps its seat and shows dimmed in Edit.
+    private var visibilityToggle: some View {
+        Toggle(isOn: Binding(get: { !draft.isHidden }, set: { draft.isHidden = !$0 })) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Show on the board")
+                    .font(.system(.body, design: .rounded).weight(.heavy))
+                Text(draft.isHidden ? "Hidden. It stays in this spot, dimmed in Edit, and is not deleted." : "The child can see and tap it.")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.muted)
+            }
+        }
+        .tint(Theme.slate)
+        .accessibilityIdentifier("editorVisible")
+    }
+
     private var editorDangerActions: some View {
         HStack(spacing: 12) {
-            if onHide != nil, draft.kind == .word {
-                Button("Hide", action: { onHide?() })
-                    .font(.system(.body, design: .rounded).weight(.heavy))
-                    .frame(maxWidth: .infinity, minHeight: 48)
-                    .foregroundStyle(Theme.cream)
-                    .background(Theme.slate)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .accessibilityIdentifier("editorHide")
-            }
             if onDelete != nil {
                 Button("Delete", role: .destructive, action: { onDelete?() })
                     .font(.system(.body, design: .rounded).weight(.heavy))

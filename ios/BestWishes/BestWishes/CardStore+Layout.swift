@@ -74,7 +74,7 @@ extension CardStore {
         }
         var hiddenAt: [GridCoord: BoardItem] = [:]
         for (itemID, coord) in placed where visible[itemID] == nil {
-            if let item = itemForID(itemID), hiddenSlugs.contains(itemSlug(item)) {
+            if let item = itemForID(itemID), hiddenSlugs.contains(item.id) {
                 hiddenAt[coord] = item
             }
         }
@@ -105,6 +105,12 @@ extension CardStore {
     }
 
     func draftForExisting(_ item: BoardItem, at coord: GridCoord) -> ButtonEditorDraft {
+        var draft = baseDraftForExisting(item, at: coord)
+        draft.isHidden = hiddenSlugs.contains(item.id)
+        return draft
+    }
+
+    private func baseDraftForExisting(_ item: BoardItem, at coord: GridCoord) -> ButtonEditorDraft {
         let style = style(for: item)
         switch item {
         case .word(let card):
@@ -144,6 +150,13 @@ extension CardStore {
         setSpeakText(speak, for: editorSlug(itemID))
         setStyle(CellStyle(backgroundHex: draft.backgroundHex, borderHex: draft.borderHex), for: itemID)
         place(id: itemID, at: draft.coord)
+        if draft.existingID != nil {
+            if draft.isHidden, !hiddenSlugs.contains(itemID) {
+                hideAfterConfirm(itemID)
+            } else if !draft.isHidden, hiddenSlugs.contains(itemID) {
+                unhide(itemID)
+            }
+        }
         if case .photo(let image) = draft.imageChoice {
             if cache.saveLocalImage(image, for: editorSlug(itemID)) {
                 bumpImage(editorSlug(itemID))

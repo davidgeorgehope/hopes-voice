@@ -238,7 +238,6 @@ struct ContentView: View {
                     errorMessage: store.errorMessage,
                     onSave: { Task { await saveEditor() } },
                     onCancel: { editorDraft = nil },
-                    onHide: hideEditorItem,
                     onDelete: deleteEditorItem
                 )
             }
@@ -1362,6 +1361,16 @@ struct ContentView: View {
         .allowsHitTesting(canAdd)
     }
 
+    /// Marks a hidden button in Edit (it is not on the child's board).
+    private var hiddenBadge: some View {
+        Image(systemName: "eye.slash.fill")
+            .font(.system(size: chrome.isCompact ? 13 : 17, weight: .bold))
+            .foregroundStyle(Theme.cream)
+            .padding(chrome.isCompact ? 5 : 7)
+            .background(Circle().fill(Theme.slate))
+            .padding(4)
+    }
+
     @ViewBuilder
     private func boardCell(_ item: BoardItem, at coord: GridCoord? = nil, dimmed: Bool = false) -> some View {
         let label = store.displayLabel(for: item)
@@ -1384,6 +1393,7 @@ struct ContentView: View {
             }
             .opacity(dimmed ? 0.45 : 1)
             .onLongPressGesture(minimumDuration: 0.45) { showForms(card) }
+            .overlay(alignment: .topTrailing) { if dimmed { hiddenBadge } }
             .onTapGesture { handleBoardTap(item, at: coord) }
             .modifier(BoardReorderSupport(
                 itemID: item.id,
@@ -1396,6 +1406,7 @@ struct ContentView: View {
             .accessibilityAction { handleBoardTap(item, at: coord) }
             .accessibilityAction(named: "Word forms") { showForms(card) }
             .accessibilityLabel(label)
+            .accessibilityValue(dimmed ? "Hidden" : "")
             .accessibilityHint("Adds this word to the sentence")
             .accessibilityIdentifier("card-\(card.slug)")
         case .folder(let folder):
@@ -1411,6 +1422,7 @@ struct ContentView: View {
                 )
             }
             .opacity(dimmed ? 0.45 : 1)
+            .overlay(alignment: .topTrailing) { if dimmed { hiddenBadge } }
             .onTapGesture { handleBoardTap(item, at: coord) }
             .modifier(BoardReorderSupport(
                 itemID: item.id,
@@ -1422,6 +1434,7 @@ struct ContentView: View {
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { handleBoardTap(item, at: coord) }
             .accessibilityLabel("\(label) folder")
+            .accessibilityValue(dimmed ? "Hidden" : "")
             .accessibilityHint("Opens this folder")
             .accessibilityIdentifier("folder-\(folder.id)")
         }
@@ -1559,15 +1572,6 @@ struct ContentView: View {
         defer { editorBusy = false }
         if await store.saveEditorDraft(draft) != nil {
             editorDraft = nil
-        }
-    }
-
-    private func hideEditorItem() {
-        guard let draft = editorDraft, let existingID = draft.existingID else { return }
-        if existingID.hasPrefix("folder:") { return }
-        if let card = store.cards.first(where: { $0.slug == existingID }) {
-            editorDraft = nil
-            pendingHide = card
         }
     }
 

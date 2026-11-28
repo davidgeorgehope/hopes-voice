@@ -874,10 +874,8 @@ final class CardStore {
                 .map { BoardItem.word($0) }
         }
         return (folderItems + wordItems).filter { item in
-            if case .word(let card) = item {
-                return !hiddenSlugs.contains(card.slug)
-            }
-            return true
+            // Words hide by slug, folders by "folder:<id>" (so a word and a folder can share a name).
+            !hiddenSlugs.contains(item.id)
         }
     }
 
