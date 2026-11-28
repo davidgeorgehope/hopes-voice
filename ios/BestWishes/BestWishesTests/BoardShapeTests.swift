@@ -12,9 +12,9 @@ final class BoardShapeTests: XCTestCase {
     }
 
     func testTooManyRowsShowFewerWholeRowsInstead() {
-        // 6 rows in 700 pt would be 93 pt (flatter than 100). 5 rows fit at 116 pt.
-        let h = height(available: 700, rows: 6, width: 162)
-        XCTAssertEqual(h, 116)
+        // 6 rows in 640 pt would be 83 pt (flatter than 0.55 × 162 = 89). 5 rows fit at 104 pt.
+        let h = height(available: 640, rows: 6, width: 162)
+        XCTAssertEqual(h, 104)
         XCTAssertGreaterThanOrEqual(h / 162, BoardChrome.minimumCellAspect)
     }
 
@@ -26,6 +26,6 @@ final class BoardShapeTests: XCTestCase {
     }
 
     func testTinyBoardStillGivesOneUsableRow() {
-        XCTAssertEqual(height(available: 120, rows: 6, width: 255), 158)
+        XCTAssertEqual(height(available: 120, rows: 6, width: 255), 140)
     }
 }
