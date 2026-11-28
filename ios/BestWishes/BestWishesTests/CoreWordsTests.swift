@@ -48,6 +48,23 @@ final class CoreWordsTests: XCTestCase {
     }
 
     @MainActor
+    func testCoreWordsFolderBacksTheLayoutAndIsNeverShownAsAFolder() throws {
+        let root = try tempRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = makeStore(root)
+        let you = Card(word: "you", slug: "you", imageURL: "/assets/you/image.png", audioURL: "")
+        let car = Card(word: "car", slug: "car", imageURL: "", audioURL: "")
+        let store_ = BoardFolder(id: CoreWords.storeFolderId, name: "Core words", parentId: nil, memberSlugs: ["you"])
+        store.seedLocalBoard(cards: [you, car], folders: [store_])
+
+        XCTAssertEqual(store.currentItems.map(\.id), ["car"], "My board doesn't show the core-words folder")
+        store.setHomeLayout(.coreWords)
+        let ids = store.currentItems.map(\.id)
+        XCTAssertEqual(ids[1], "you", "the core tile is the folder's real button, with its picture")
+        XCTAssertEqual(ids.count, 36, "no folder tile for the core words")
+    }
+
+    @MainActor
     func testTappingAWordTileAddsItToTheBar() throws {
         let root = try tempRoot()
         defer { try? FileManager.default.removeItem(at: root) }

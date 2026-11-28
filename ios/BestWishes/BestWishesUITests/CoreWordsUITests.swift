@@ -7,11 +7,26 @@ final class CoreWordsUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
     }
 
+    /// Never leave the core layout on for the tests that run after this one.
+    override func tearDown() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-HomeLayout", "myBoard", "-ClearRecents"]
+        app.launch()
+        app.terminate()
+    }
+
+    /// The core tile for a word: its own button when the board has one, else the core stand-in.
+    private func coreTile(_ app: XCUIApplication, _ word: String) -> XCUIElement {
+        app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier IN %@", ["card-\(word)", "card-core:\(word)"]))
+            .firstMatch
+    }
+
     func testCoreWordHomeTalksAndCanBeTurnedOff() {
         let app = XCUIApplication()
         app.launchArguments = ["-ClearImportedBoard", "-HomeLayout", "coreWords", "-KidMode", "-GoHome"]
         app.launch()
-        let you = app.descendants(matching: .any)["card-core:you"]
+        let you = coreTile(app, "you")
         XCTAssertTrue(you.waitForExistence(timeout: 20), "no core word tile for you")
         XCTAssertTrue(app.descendants(matching: .any)["card-want"].exists, "want uses its existing button")
         let shot = XCTAttachment(screenshot: app.screenshot())
@@ -28,6 +43,6 @@ final class CoreWordsUITests: XCTestCase {
         app.launchArguments = ["-HomeLayout", "myBoard", "-KidMode", "-GoHome"]
         app.launch()
         XCTAssertTrue(app.descendants(matching: .any)["card-car"].waitForExistence(timeout: 20), "back to the family's board")
-        XCTAssertFalse(app.descendants(matching: .any)["card-core:you"].exists)
+        XCTAssertFalse(coreTile(app, "you").exists, "core words are off")
     }
 }

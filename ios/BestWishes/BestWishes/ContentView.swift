@@ -1734,6 +1734,9 @@ struct ContentView: View {
         mode.applyLaunchArguments(args)
         profiles.applyLaunchArguments(args, overlay: store, grid: grid)
         // Test hook: start from the default board's Home (drops a saved import and folder).
+        if args.contains("-ClearRecents") {
+            store.clearRecents()
+        }
         if args.contains("-ClearImportedBoard") {
             store.clearImportedBoard()
             grid.resetToSizeClassDefaults(isCompact: horizontalSizeClass == .compact)
@@ -2278,20 +2281,7 @@ struct CardCell: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Group {
-                if CoreWords.isCoreTile(card), card.imageURL.isEmpty, image == nil {
-                    // Core word with no button of its own yet: show the word itself.
-                    Text(shown)
-                        .font(.system(size: 30, weight: .heavy, design: .rounded))
-                        .foregroundStyle(Theme.ink)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.4)
-                        .padding(.horizontal, 6)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    PecsImageView(image: image, remoteURL: remoteURL, placeholderSize: 36)
-                }
-            }
+            PecsImageView(image: image, remoteURL: remoteURL, placeholderSize: 36)
                 .frame(maxWidth: .infinity)
                 .frame(maxHeight: expands ? .infinity : nil)
                 .aspectRatio(expands ? nil as CGFloat? : 1, contentMode: .fit)

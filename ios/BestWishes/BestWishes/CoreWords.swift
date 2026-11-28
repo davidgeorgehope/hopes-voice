@@ -13,6 +13,8 @@ enum HomeLayout: String, Codable, CaseIterable, Sendable {
 /// recorded voice); the others are word tiles spoken with the device voice.
 enum CoreWords {
     static let slugPrefix = "core:"
+    /// Server folder that holds the core words' own buttons (picture + voice).
+    static let storeFolderId = "core-words"
 
     /// Fixed order. Read in rows of six: people and wanting, then actions, describing words,
     /// little words, and questions.
