@@ -668,6 +668,97 @@ async def create_card(body: CreateCardRequest) -> CardResponse:
     )
 
 
+# ---------------------------------------------------------------------------
+# Regenerate one card's picture (caregiver "New picture")
+# ---------------------------------------------------------------------------
+
+#: Seconds before the same card can get another new picture.
+REGEN_COOLDOWN_SECONDS = int(os.environ.get("HOPESVOICE_REGEN_COOLDOWN_SECONDS", "20"))
+#: New pictures allowed per UTC day across all cards (each costs one image generation).
+REGEN_DAILY_CAP = int(os.environ.get("HOPESVOICE_REGEN_DAILY_CAP", "40"))
+
+
+def _regen_counter_path() -> Path:
+    return DATA_DIR.parent / "system" / "regen-counter.json"
+
+
+def _take_regen_budget() -> None:
+    """Count one regeneration against today's cap, or raise 429."""
+    path = _regen_counter_path()
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    try:
+        state = json.loads(path.read_text())
+    except (OSError, ValueError):
+        state = {}
+    count = state.get("count", 0) if state.get("date") == today else 0
+    if count >= REGEN_DAILY_CAP:
+        raise HTTPException(status_code=429, detail="Too many new pictures today. Try again tomorrow.")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"date": today, "count": count + 1}))
+
+
+@app.post("/v1/cards/{slug}/image", response_model=CardResponse)
+async def regenerate_card_image(slug: str) -> CardResponse:
+    """Make a new original picture for an existing card. Audio is kept.
+
+    The previous picture is kept next to it as ``image.prev.png``. The asset URL does not
+    change; its ETag / Last-Modified do, so devices re-download it on their next check.
+    """
+    meta = read_meta(slug)
+    card_dir = DATA_DIR / slug
+    image_file = card_dir / "image.png"
+    if not meta or not card_dir.is_dir():
+        raise HTTPException(status_code=404, detail=f"card '{slug}' not found")
+    last = meta.get("image_regenerated_at")
+    if last:
+        try:
+            elapsed = (datetime.now(timezone.utc) - datetime.fromisoformat(last.replace("Z", "+00:00"))).total_seconds()
+        except ValueError:
+            elapsed = REGEN_COOLDOWN_SECONDS
+        if elapsed < REGEN_COOLDOWN_SECONDS:
+            raise HTTPException(status_code=429, detail="That button just got a new picture. Wait a moment.")
+    _take_regen_budget()
+
+    word = meta.get("word") or slug
+    fresh = card_dir / "image.new.png"
+    async with httpx.AsyncClient() as client:
+        img_info = await generate_image(client, word, fresh)
+    if image_file.is_file():
+        shutil.copy2(image_file, card_dir / "image.prev.png")
+    os.replace(fresh, image_file)
+
+    urls = public_urls(slug)
+    meta.update(
+        {
+            "image_path": str(image_file),
+            "image_url": urls["image_url"],
+            "image_bytes": img_info["bytes"],
+            "image_model": img_info["model"],
+            "prompt": img_info["prompt"],
+            "image_regenerated_at": utc_now(),
+            "image_revision": int(meta.get("image_revision", 0)) + 1,
+        }
+    )
+    meta.setdefault("audio_path", str(card_dir / "audio.mp3"))
+    meta.setdefault("audio_url", urls["audio_url"])
+    meta.setdefault("created_at", utc_now())
+    write_meta(slug, meta)
+    board = reconcile_board(load_board())
+    return CardResponse(
+        word=word,
+        slug=slug,
+        image_path=meta["image_path"],
+        audio_path=meta["audio_path"],
+        image_url=meta["image_url"],
+        audio_url=meta["audio_url"],
+        created_at=meta["created_at"],
+        image_bytes=meta.get("image_bytes"),
+        audio_bytes=meta.get("audio_bytes"),
+        kind="word",
+        folder_id=board["card_folder"].get(slug),
+    )
+
+
 @app.get("/v1/cards")
 async def list_cards(request: Request) -> Response:
     """Flat list of word cards only (backward compatible for old clients)."""
