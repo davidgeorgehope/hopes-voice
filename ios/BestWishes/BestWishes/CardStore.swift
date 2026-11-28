@@ -151,7 +151,7 @@ final class CardStore {
         return Array(found.prefix(Self.recentsLimit))
     }
 
-    private let api: APIClient
+    let api: APIClient
     let cache: AssetCache
     private let player: SpeechPlayer
     @ObservationIgnored let thumbnails: ThumbnailCache

@@ -106,6 +106,16 @@ final class AssetCache: Sendable {
         }
     }
 
+    /// Forget this card's picture (and that it was an on-device photo) so the next fetch
+    /// downloads the server's picture from scratch. Used after "New picture".
+    func dropImageForRefetch(_ slug: String) {
+        defer { noteChange(nil) }
+        let image = imageURL(for: slug)
+        try? fileManager.removeItem(at: localImageMarkerURL(for: slug))
+        try? fileManager.removeItem(at: validatorURL(for: image))
+        try? fileManager.removeItem(at: image)
+    }
+
     /// Slugs that have a caregiver photo on this device (these are what sync shares).
     func localImageSlugs() -> [String] {
         let assets = root.appendingPathComponent("assets", isDirectory: true)

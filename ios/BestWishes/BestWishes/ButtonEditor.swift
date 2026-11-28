@@ -161,7 +161,7 @@ struct ButtonEditorSheet: View {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(Color(hex: draft.backgroundHex) ?? Theme.cream)
                     .frame(height: 160)
-                if let image = draft.currentImage {
+                if let image = draft.currentImage, !(draft.imageChoice == .generate && draft.existingID != nil) {
                     Image(uiImage: PecsImage.fillingSubject(image))
                         .resizable()
                         .scaledToFit()
@@ -171,7 +171,7 @@ struct ButtonEditorSheet: View {
                     VStack(spacing: 6) {
                         Image(systemName: "sparkles")
                             .font(.system(size: 28, weight: .bold))
-                        Text("AI picture on save")
+                        Text(draft.existingID == nil ? "AI picture on save" : "New AI picture on save")
                             .font(.system(.subheadline, design: .rounded).weight(.semibold))
                     }
                     .foregroundStyle(Theme.muted)
@@ -189,7 +189,7 @@ struct ButtonEditorSheet: View {
                 Button {
                     draft.imageChoice = .generate
                 } label: {
-                    chipLabel("Generate", selected: draft.imageChoice == .generate)
+                    chipLabel(draft.existingID == nil ? "Generate" : "New picture", selected: draft.imageChoice == .generate)
                 }
                 .accessibilityIdentifier("editorGenerate")
                 PhotosPicker(selection: $photoItem, matching: .images, photoLibrary: .shared()) {

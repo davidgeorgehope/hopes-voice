@@ -71,6 +71,7 @@
 		B10000000000000000000011 /* ThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000011 /* ThumbnailCache.swift */; };
 		B10000000000000000000012 /* ThumbnailCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000012 /* ThumbnailCacheTests.swift */; };
 		B10000000000000000000013 /* ConditionalFetchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000013 /* ConditionalFetchTests.swift */; };
+		C1B1ED1E5680722BAAEBD5F1 /* RegeneratePictureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2B1ED1E5680722BAAEBD5F1 /* RegeneratePictureTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -158,6 +159,7 @@
 		B20000000000000000000011 /* ThumbnailCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCache.swift; sourceTree = "<group>"; };
 		B20000000000000000000012 /* ThumbnailCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCacheTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000013 /* ConditionalFetchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionalFetchTests.swift; sourceTree = "<group>"; };
+		C2B1ED1E5680722BAAEBD5F1 /* RegeneratePictureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegeneratePictureTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -286,6 +288,7 @@
 				A20000000000000000000906 /* SyncDocTests.swift */,
 				B20000000000000000000010 /* PerformanceTests.swift */,
 				B20000000000000000000013 /* ConditionalFetchTests.swift */,
+				C2B1ED1E5680722BAAEBD5F1 /* RegeneratePictureTests.swift */,
 				B20000000000000000000012 /* ThumbnailCacheTests.swift */,
 			);
 			path = BestWishesTests;
@@ -475,6 +478,7 @@
 				A1000000000000000000000C /* SentenceStripTests.swift in Sources */,
 				B10000000000000000000010 /* PerformanceTests.swift in Sources */,
 				B10000000000000000000013 /* ConditionalFetchTests.swift in Sources */,
+				C1B1ED1E5680722BAAEBD5F1 /* RegeneratePictureTests.swift in Sources */,
 				B10000000000000000000012 /* ThumbnailCacheTests.swift in Sources */,
 				A10000000000000000000025 /* PecsImageTests.swift in Sources */,
 				A10000000000000000000026 /* BoardChromeTests.swift in Sources */,
