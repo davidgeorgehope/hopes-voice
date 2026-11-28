@@ -41,6 +41,7 @@ The key is never committed to this repo. Self-hosters bring their own `XAI_API_K
 A caregiver should be able to configure, without a code change:
 
 - vocabulary and folders
+- the name shown for each profile on this device. Child 1 and Child 2 stay the identity for launch arguments, accessibility identifiers, and saved keys. A blank name uses that identity.
 - grid size, per board
 - buttons (labels, positions, hide, speak text)
 - colors (including a Fitzgerald key / color-by-word-type scheme)

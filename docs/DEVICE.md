@@ -86,7 +86,7 @@ Set your team in Xcode (or pass `DEVELOPMENT_TEAM=<your team>`) before archiving
 Do this on the physical iPad after ⌘R, with the network **on** for steps 1–5.
 
 1. **Unlock caregiver** (long-press title). Long-press the **Hope's Voice** title for about **1.5 seconds**. The Add bar, Lock, profile switcher, and a small Caregiver label appear. Kid mode is the default on a first launch with no saved choice.
-2. **Pick a profile.** Default names are **Child 1** and **Child 2**. On the caregiver Add row, tap the other name. The badge under the title is the active profile. First launch with no saved choice is Child 1. Caregivers can rename profiles once that setting ships.
+2. **Pick a profile.** Default names are **Child 1** and **Child 2**. On the caregiver Add row, tap the other name. The badge under the title is the active profile. First launch with no saved choice is Child 1. In Edit, open Settings and change Name. The new label stays on this device. Leave Name blank to keep Child 1 or Child 2.
 3. **Warm the board.** Stay online until the grid fills from `GET /v1/board` at `https://hopesvoice.davidgeorgehope.com`. Pictures and spoken MP3s download into the on-device cache. The app never calls xAI.
 4. **Tap cores.** The sticky row is **I / want / more / help / stop / go**. Each tap appends a chip to the sentence strip and plays that word’s cached MP3.
 5. **Speak the strip.** Tap **Speak** on the strip. It plays every chip’s cached MP3 in order.

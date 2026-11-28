@@ -1,12 +1,15 @@
 import Foundation
 import Observation
 
-/// The two on-device kid profiles. Names are exact display strings.
+/// The two on-device kid profiles. `rawValue` is the stable identity
+/// ("Child 1" / "Child 2") for launch arguments, accessibility identifiers,
+/// and saved keys. A caregiver can show a different label.
 enum KidProfile: String, CaseIterable, Identifiable, Sendable {
     case child1 = "Child 1"
     case child2 = "Child 2"
 
     var id: String { rawValue }
+    /// Identity string. The caregiver-facing label lives on `ProfileStore`.
     var displayName: String { rawValue }
     /// Filesystem key for per-profile overlay files (`hidden-child1.json`).
     var fileKey: String {
@@ -21,11 +24,19 @@ enum KidProfile: String, CaseIterable, Identifiable, Sendable {
 @Observable
 final class ProfileStore {
     static let defaultsKey = "bestwishes.activeProfile"
+    /// Longest caregiver label, in characters, after trimming.
+    static let maxDisplayNameLength = 24
 
     private(set) var active: KidProfile
+    /// Custom labels keyed by `KidProfile.fileKey`. A missing entry uses `rawValue`.
+    private(set) var displayNames: [String: String]
     private let defaults: UserDefaults
 
-    var activeName: String { active.rawValue }
+    var activeName: String { displayName(for: active) }
+
+    static func nameKey(for profile: KidProfile) -> String {
+        "bestwishes.profileName.\(profile.fileKey)"
+    }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -35,6 +46,39 @@ final class ProfileStore {
         } else {
             self.active = .child1
         }
+        self.displayNames = Self.loadDisplayNames(defaults: defaults)
+    }
+
+    func displayName(for profile: KidProfile) -> String {
+        displayNames[profile.fileKey] ?? profile.rawValue
+    }
+
+    /// Trim, drop a blank, and cap the length. A blank removes the saved label.
+    func setDisplayName(_ name: String, for profile: KidProfile) {
+        let key = Self.nameKey(for: profile)
+        if let normalized = Self.normalizedDisplayName(name) {
+            displayNames[profile.fileKey] = normalized
+            defaults.set(normalized, forKey: key)
+        } else {
+            displayNames.removeValue(forKey: profile.fileKey)
+            defaults.removeObject(forKey: key)
+        }
+    }
+
+    static func normalizedDisplayName(_ name: String) -> String? {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return String(trimmed.prefix(maxDisplayNameLength))
+    }
+
+    private static func loadDisplayNames(defaults: UserDefaults) -> [String: String] {
+        var names: [String: String] = [:]
+        for profile in KidProfile.allCases {
+            guard let stored = defaults.string(forKey: nameKey(for: profile)),
+                  let normalized = normalizedDisplayName(stored) else { continue }
+            names[profile.fileKey] = normalized
+        }
+        return names
     }
 
     /// Same path the caregiver switcher uses. Reloads per-profile overlays

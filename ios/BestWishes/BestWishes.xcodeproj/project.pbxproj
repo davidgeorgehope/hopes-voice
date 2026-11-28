@@ -56,6 +56,7 @@
 		A10000000000000000000019 /* CoreVocabularyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* CoreVocabularyTests.swift */; };
 		A1000000000000000000001A /* ProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* ProfileStore.swift */; };
 		A1000000000000000000001B /* ProfileStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* ProfileStoreTests.swift */; };
+		A10000000000000000000038 /* SettingsPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000038 /* SettingsPersistenceTests.swift */; };
 		A1000000000000000000001C /* ReorderRenameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001C /* ReorderRenameTests.swift */; };
 		A1000000000000000000001D /* RecentsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001D /* RecentsTests.swift */; };
 		A1000000000000000000001E /* BoardSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001E /* BoardSearchTests.swift */; };
@@ -139,6 +140,7 @@
 		A20000000000000000000019 /* CoreVocabularyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreVocabularyTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000001A /* ProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStore.swift; sourceTree = "<group>"; };
 		A2000000000000000000001B /* ProfileStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStoreTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000038 /* SettingsPersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPersistenceTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000001C /* ReorderRenameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReorderRenameTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000001D /* RecentsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentsTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000001E /* BoardSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardSearchTests.swift; sourceTree = "<group>"; };
@@ -270,6 +272,7 @@
 				A20000000000000000000017 /* BoardContractTests.swift */,
 				A20000000000000000000019 /* CoreVocabularyTests.swift */,
 				A2000000000000000000001B /* ProfileStoreTests.swift */,
+				A20000000000000000000038 /* SettingsPersistenceTests.swift */,
 				A2000000000000000000001C /* ReorderRenameTests.swift */,
 				A2000000000000000000001D /* RecentsTests.swift */,
 				A2000000000000000000001E /* BoardSearchTests.swift */,
@@ -478,6 +481,7 @@
 				A10000000000000000000017 /* BoardContractTests.swift in Sources */,
 				A10000000000000000000019 /* CoreVocabularyTests.swift in Sources */,
 				A1000000000000000000001B /* ProfileStoreTests.swift in Sources */,
+				A10000000000000000000038 /* SettingsPersistenceTests.swift in Sources */,
 				A1000000000000000000001C /* ReorderRenameTests.swift in Sources */,
 				A1000000000000000000001D /* RecentsTests.swift in Sources */,
 				A1000000000000000000001E /* BoardSearchTests.swift in Sources */,

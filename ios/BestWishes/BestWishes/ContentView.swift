@@ -107,6 +107,7 @@ struct ContentView: View {
                 store: store,
                 grid: grid,
                 sync: sync,
+                profiles: profiles,
                 onDismiss: { showingSettings = false },
                 onImport: {
                     showingSettings = false
@@ -378,8 +379,10 @@ struct ContentView: View {
                     profiles.switchTo(profile, overlay: store, grid: grid)
                     sync?.profileDidChange()
                 } label: {
-                    Text(profile.rawValue)
+                    Text(profiles.displayName(for: profile))
                         .font(.system(size: 18, weight: .heavy, design: .rounded))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
                         .frame(minWidth: 108, minHeight: 56)
                         .foregroundStyle(Theme.cream)
                         .background(
@@ -391,7 +394,7 @@ struct ContentView: View {
                                 )
                         )
                 }
-                .accessibilityLabel("Switch to \(profile.rawValue)")
+                .accessibilityLabel("Switch to \(profiles.displayName(for: profile))")
                 .accessibilityIdentifier("switchProfile-\(profile.rawValue)")
                 .accessibilityAddTraits(profiles.active == profile ? .isSelected : [])
             }
