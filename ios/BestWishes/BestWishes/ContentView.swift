@@ -915,22 +915,23 @@ struct ContentView: View {
                 spacing: chrome.gridSpacing,
                 minimum: chrome.minimumCellHeight
             )
+            let cellWidth = chrome.cellWidth(columns: cols)
             ScrollView(.vertical) {
-                Grid(horizontalSpacing: chrome.gridSpacing, verticalSpacing: chrome.gridSpacing) {
-                    ForEach(0..<totalRows, id: \.self) { row in
-                        GridRow {
-                            ForEach(0..<cols, id: \.self) { col in
-                                let index = row * cols + col
-                                Group {
-                                    if index < slots.count {
-                                        boardSlotCell(slots[index])
-                                    } else {
-                                        Color.clear
-                                    }
-                                }
-                                .frame(width: chrome.cellWidth(columns: cols), height: cellHeight)
+                // Lazy, so a board with hundreds of buttons only builds the rows on screen.
+                // Fixed columns keep every cell exactly `cellWidth` wide.
+                LazyVGrid(
+                    columns: Array(repeating: GridItem(.fixed(cellWidth), spacing: chrome.gridSpacing), count: cols),
+                    spacing: chrome.gridSpacing
+                ) {
+                    ForEach(0..<(totalRows * cols), id: \.self) { index in
+                        Group {
+                            if index < slots.count {
+                                boardSlotCell(slots[index])
+                            } else {
+                                Color.clear
                             }
                         }
+                        .frame(width: cellWidth, height: cellHeight)
                     }
                 }
                 .padding(.horizontal, chrome.gridPadding)
