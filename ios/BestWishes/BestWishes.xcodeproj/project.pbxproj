@@ -24,6 +24,7 @@
 		A10000000000000000000025 /* PecsImageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* PecsImageTests.swift */; };
 		A10000000000000000000026 /* BoardChromeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* BoardChromeTests.swift */; };
 		A10000000000000000000027 /* GridCoord.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* GridCoord.swift */; };
+		C1ED94DFC55BD121B6A844F2 /* WordClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2ED94DFC55BD121B6A844F2 /* WordClass.swift */; };
 		A10000000000000000000028 /* EditLockButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000028 /* EditLockButton.swift */; };
 		A10000000000000000000029 /* ButtonEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000029 /* ButtonEditor.swift */; };
 		A10000000000000000000030 /* MessageBarSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000030 /* MessageBarSettings.swift */; };
@@ -51,6 +52,7 @@
 		A10000000000000000000013 /* OfflineBoardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* OfflineBoardTests.swift */; };
 		A10000000000000000000014 /* GridLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* GridLayout.swift */; };
 		A10000000000000000000015 /* GridLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* GridLayoutTests.swift */; };
+		C194E6727168A6E1974ED709 /* WordClassTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C294E6727168A6E1974ED709 /* WordClassTests.swift */; };
 		A10000000000000000000017 /* BoardContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* BoardContractTests.swift */; };
 		A10000000000000000000018 /* CoreVocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* CoreVocabulary.swift */; };
 		A10000000000000000000019 /* CoreVocabularyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* CoreVocabularyTests.swift */; };
@@ -66,10 +68,12 @@
 		A10000000000000000000022 /* Speech.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* Speech.framework */; };
 		B10000000000000000000001 /* HoldToEditUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* HoldToEditUITests.swift */; };
 		C1C635D0A05A8172E571A72E /* LayoutFitUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C635D0A05A8172E571A72E /* LayoutFitUITests.swift */; };
+		C16C6732B8F7E622A9747ABA /* NewPictureUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C26C6732B8F7E622A9747ABA /* NewPictureUITests.swift */; };
 		B10000000000000000000010 /* PerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000010 /* PerformanceTests.swift */; };
 		B10000000000000000000011 /* ThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000011 /* ThumbnailCache.swift */; };
 		B10000000000000000000012 /* ThumbnailCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000012 /* ThumbnailCacheTests.swift */; };
 		B10000000000000000000013 /* ConditionalFetchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000013 /* ConditionalFetchTests.swift */; };
+		C1B1ED1E5680722BAAEBD5F1 /* RegeneratePictureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2B1ED1E5680722BAAEBD5F1 /* RegeneratePictureTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -107,6 +111,7 @@
 		A20000000000000000000025 /* PecsImageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PecsImageTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000026 /* BoardChromeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardChromeTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000027 /* GridCoord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridCoord.swift; sourceTree = "<group>"; };
+		C2ED94DFC55BD121B6A844F2 /* WordClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordClass.swift; sourceTree = "<group>"; };
 		A20000000000000000000028 /* EditLockButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditLockButton.swift; sourceTree = "<group>"; };
 		A20000000000000000000029 /* ButtonEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonEditor.swift; sourceTree = "<group>"; };
 		A20000000000000000000030 /* MessageBarSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBarSettings.swift; sourceTree = "<group>"; };
@@ -136,6 +141,7 @@
 		A20000000000000000000014 /* OfflineBoardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineBoardTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000015 /* GridLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridLayout.swift; sourceTree = "<group>"; };
 		A20000000000000000000016 /* GridLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridLayoutTests.swift; sourceTree = "<group>"; };
+		C294E6727168A6E1974ED709 /* WordClassTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordClassTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000017 /* BoardContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardContractTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000018 /* CoreVocabulary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreVocabulary.swift; sourceTree = "<group>"; };
 		A20000000000000000000019 /* CoreVocabularyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreVocabularyTests.swift; sourceTree = "<group>"; };
@@ -151,11 +157,13 @@
 		A20000000000000000000022 /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
 		B20000000000000000000001 /* HoldToEditUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldToEditUITests.swift; sourceTree = "<group>"; };
 		C2C635D0A05A8172E571A72E /* LayoutFitUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutFitUITests.swift; sourceTree = "<group>"; };
+		C26C6732B8F7E622A9747ABA /* NewPictureUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewPictureUITests.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* BestWishesUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BestWishesUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B20000000000000000000010 /* PerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000011 /* ThumbnailCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCache.swift; sourceTree = "<group>"; };
 		B20000000000000000000012 /* ThumbnailCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCacheTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000013 /* ConditionalFetchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionalFetchTests.swift; sourceTree = "<group>"; };
+		C2B1ED1E5680722BAAEBD5F1 /* RegeneratePictureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegeneratePictureTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -206,6 +214,7 @@
 				A20000000000000000000023 /* PecsImage.swift */,
 				A20000000000000000000024 /* BoardChrome.swift */,
 				A20000000000000000000027 /* GridCoord.swift */,
+				C2ED94DFC55BD121B6A844F2 /* WordClass.swift */,
 				A20000000000000000000028 /* EditLockButton.swift */,
 				A20000000000000000000029 /* ButtonEditor.swift */,
 				A20000000000000000000030 /* MessageBarSettings.swift */,
@@ -271,6 +280,7 @@
 				A20000000000000000000013 /* EditBoardTests.swift */,
 				A20000000000000000000014 /* OfflineBoardTests.swift */,
 				A20000000000000000000016 /* GridLayoutTests.swift */,
+				C294E6727168A6E1974ED709 /* WordClassTests.swift */,
 				A20000000000000000000017 /* BoardContractTests.swift */,
 				A20000000000000000000019 /* CoreVocabularyTests.swift */,
 				A2000000000000000000001B /* ProfileStoreTests.swift */,
@@ -283,6 +293,7 @@
 				A20000000000000000000906 /* SyncDocTests.swift */,
 				B20000000000000000000010 /* PerformanceTests.swift */,
 				B20000000000000000000013 /* ConditionalFetchTests.swift */,
+				C2B1ED1E5680722BAAEBD5F1 /* RegeneratePictureTests.swift */,
 				B20000000000000000000012 /* ThumbnailCacheTests.swift */,
 			);
 			path = BestWishesTests;
@@ -293,6 +304,7 @@
 			children = (
 				B20000000000000000000001 /* HoldToEditUITests.swift */,
 				C2C635D0A05A8172E571A72E /* LayoutFitUITests.swift */,
+				C26C6732B8F7E622A9747ABA /* NewPictureUITests.swift */,
 			);
 			path = BestWishesUITests;
 			sourceTree = "<group>";
@@ -433,6 +445,7 @@
 				A10000000000000000000023 /* PecsImage.swift in Sources */,
 				A10000000000000000000024 /* BoardChrome.swift in Sources */,
 				A10000000000000000000027 /* GridCoord.swift in Sources */,
+				C1ED94DFC55BD121B6A844F2 /* WordClass.swift in Sources */,
 				A10000000000000000000028 /* EditLockButton.swift in Sources */,
 				A10000000000000000000029 /* ButtonEditor.swift in Sources */,
 				A10000000000000000000030 /* MessageBarSettings.swift in Sources */,
@@ -471,6 +484,7 @@
 				A1000000000000000000000C /* SentenceStripTests.swift in Sources */,
 				B10000000000000000000010 /* PerformanceTests.swift in Sources */,
 				B10000000000000000000013 /* ConditionalFetchTests.swift in Sources */,
+				C1B1ED1E5680722BAAEBD5F1 /* RegeneratePictureTests.swift in Sources */,
 				B10000000000000000000012 /* ThumbnailCacheTests.swift in Sources */,
 				A10000000000000000000025 /* PecsImageTests.swift in Sources */,
 				A10000000000000000000026 /* BoardChromeTests.swift in Sources */,
@@ -481,6 +495,7 @@
 				A10000000000000000000012 /* EditBoardTests.swift in Sources */,
 				A10000000000000000000013 /* OfflineBoardTests.swift in Sources */,
 				A10000000000000000000015 /* GridLayoutTests.swift in Sources */,
+				C194E6727168A6E1974ED709 /* WordClassTests.swift in Sources */,
 				A10000000000000000000017 /* BoardContractTests.swift in Sources */,
 				A10000000000000000000019 /* CoreVocabularyTests.swift in Sources */,
 				A1000000000000000000001B /* ProfileStoreTests.swift in Sources */,
@@ -500,6 +515,7 @@
 			files = (
 				B10000000000000000000001 /* HoldToEditUITests.swift in Sources */,
 				C1C635D0A05A8172E571A72E /* LayoutFitUITests.swift in Sources */,
+				C16C6732B8F7E622A9747ABA /* NewPictureUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -809,6 +809,7 @@ struct ContentView: View {
                     CoreWordCell(
                         card: card,
                         image: store.image(for: card),
+                        backgroundColor: Color(hex: store.style(forCard: card.slug).backgroundHex),
                         remoteURL: store.remoteImageURL(for: card),
                         revision: store.imageRevision[card.slug, default: 0],
                         highlighted: store.lastSpokenSlug == card.slug
@@ -845,6 +846,7 @@ struct ContentView: View {
                         card: card,
                         label: store.displayLabel(for: card),
                         image: store.image(for: card),
+                        backgroundColor: Color(hex: store.style(forCard: card.slug).backgroundHex),
                         remoteURL: store.remoteImageURL(for: card),
                         revision: store.imageRevision[card.slug, default: 0],
                         highlighted: store.lastSpokenSlug == card.slug
@@ -1969,6 +1971,7 @@ struct CoreWordCell: View {
     let card: Card
     var label: String? = nil
     let image: UIImage?
+    var backgroundColor: Color? = nil
     let remoteURL: URL?
     let revision: Int
     let highlighted: Bool
@@ -1979,8 +1982,12 @@ struct CoreWordCell: View {
     var body: some View {
         VStack(spacing: 0) {
             PecsImageView(image: image, remoteURL: remoteURL, placeholderSize: 28)
+                // A small inset so the word-type color shows around the picture.
+                .padding(.horizontal, 5)
+                .padding(.top, 5)
                 .frame(maxWidth: .infinity)
                 .frame(height: chrome.coreImageHeight)
+                .background(backgroundColor ?? Theme.cream)
 
             Text(shown)
                 .font(.system(size: chrome.coreTitleSize, weight: .heavy, design: .rounded))

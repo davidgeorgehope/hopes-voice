@@ -102,6 +102,13 @@ struct BoardSettingsSheet: View {
                         value: $draft.viewportCols,
                         in: GridLayout.allowedColumnRange
                     )
+                    if !store.hasImportedBoard {
+                        Toggle("Color by word type", isOn: Binding(
+                            get: { draft.colorScheme == ProfileSettings.fitzgeraldScheme },
+                            set: { draft.colorScheme = $0 ? ProfileSettings.fitzgeraldScheme : "custom" }
+                        ))
+                        .accessibilityIdentifier("settingsWordTypeColors")
+                    }
                     Toggle("Show core words", isOn: $draft.showCoreRow)
                     Toggle("Show recents", isOn: $draft.showRecents)
                 }

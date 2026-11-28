@@ -19,6 +19,8 @@ struct ProfileSettings: Equatable, Codable, Sendable {
     var showCoreRow: Bool
     var showRecents: Bool
 
+    static let fitzgeraldScheme = "fitzgerald"
+
     static let `default` = ProfileSettings(
         homeBoard: "home",
         viewportRows: 4,
@@ -27,7 +29,7 @@ struct ProfileSettings: Equatable, Codable, Sendable {
         messageBar: .default,
         returnHomeAfterSelection: false,
         addFolderWordToBar: nil,
-        colorScheme: "custom",
+        colorScheme: fitzgeraldScheme,
         colors: [:],
         backgroundHex: "E8DBC2",
         colorMode: "custom",

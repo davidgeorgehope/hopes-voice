@@ -355,7 +355,15 @@ extension CardStore {
 
     func resolvedStyle(for cell: BoardImportCell, settings: ProfileSettings) -> CellStyle {
         let border = ProfileSettings.stripHash(cell.border) ?? CellStyle.default.borderHex
-        let writtenBg = ProfileSettings.stripHash(cell.bg) ?? CellStyle.default.backgroundHex
+        var writtenBg = ProfileSettings.stripHash(cell.bg) ?? CellStyle.default.backgroundHex
+        // Fitzgerald scheme: a cell with no explicit fill takes its word type's color.
+        if settings.colorScheme == ProfileSettings.fitzgeraldScheme, cell.bg == nil,
+           cell.type == "word" || cell.type == "action" {
+            let wordClass = WordClass(importName: cell.pos) ?? WordClass.guess(for: cell.label)
+            writtenBg = ProfileSettings.stripHash(settings.colors[cell.pos ?? ""])
+                ?? ProfileSettings.stripHash(settings.colors[wordClass.rawValue])
+                ?? wordClass.defaultHex
+        }
         switch settings.colorMode {
         case "border":
             // Keep an explicit fill only when the transcription sampled a non-white interior.

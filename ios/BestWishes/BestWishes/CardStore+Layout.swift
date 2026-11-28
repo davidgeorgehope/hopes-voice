@@ -22,13 +22,34 @@ extension CardStore {
     }
 
     func style(for item: BoardItem) -> CellStyle {
-        styleOverlays[item.id]
-            ?? styleOverlays[editorSlug(item.id)]
-            ?? .default
+        if let saved = styleOverlays[item.id] ?? styleOverlays[editorSlug(item.id)] {
+            return saved
+        }
+        if case .word(let card) = item, let fill = wordClassFill(for: card) {
+            return CellStyle(backgroundHex: fill, borderHex: CellStyle.default.borderHex)
+        }
+        return .default
     }
 
     func style(forCard slug: String) -> CellStyle {
-        styleOverlays[slug] ?? .default
+        if let saved = styleOverlays[slug] { return saved }
+        if let card = cards.first(where: { $0.slug == slug }) ?? coreCards.first(where: { $0.slug == slug }),
+           let fill = wordClassFill(for: card) {
+            return CellStyle(backgroundHex: fill, borderHex: CellStyle.default.borderHex)
+        }
+        return .default
+    }
+
+    /// Fitzgerald-key fill for a word on the default board, or nil when the profile does not
+    /// color by word type. Imported boards get their colors once, at import time.
+    func wordClassFill(for card: Card) -> String? {
+        guard !hasImportedBoard, settings.colorScheme == ProfileSettings.fitzgeraldScheme else { return nil }
+        let wordClass = wordClass(for: card)
+        return ProfileSettings.stripHash(settings.colors[wordClass.rawValue]) ?? wordClass.defaultHex
+    }
+
+    func wordClass(for card: Card) -> WordClass {
+        WordClass.guess(for: displayLabel(for: card))
     }
 
     /// Fixed grid for the open board. Hidden items keep their coordinate.
@@ -241,6 +262,23 @@ extension CardStore {
         return nil
     }
 
+    /// "New picture" on an existing server word: the server makes a new original picture
+    /// (same URL, new ETag); this device drops its copy, downloads the new one, and redraws.
+    @discardableResult
+    func regeneratePicture(for slug: String) async -> Bool {
+        do {
+            let card = try await api.regenerateImage(slug: slug)
+            cache.dropImageForRefetch(slug)
+            await cache.ensureAssets(for: card, api: api, revalidate: true)
+            bumpImage(slug)
+            banner = "New picture for “\(displayLabel(for: card))”."
+            return true
+        } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            return false
+        }
+    }
+
     /// Create or update a button from the editor sheet. New words may call the backend
     /// (Generate). Photos are written only to the on-device cache.
     @discardableResult
@@ -250,6 +288,10 @@ extension CardStore {
             applyEditorMetadata(draft, itemID: existingID)
             if draft.kind == .word, draft.imageChoice == .generate {
                 banner = "Making a new picture for “\(draft.trimmedLabel)”…"
+                if !hasImportedBoard, cards.contains(where: { $0.slug == existingID }) {
+                    await regeneratePicture(for: existingID)
+                    return existingID
+                }
                 if let card = await addWord(draft.trimmedLabel) {
                     applyEditorMetadata(draft, itemID: card.slug)
                     return card.slug

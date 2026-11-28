@@ -155,6 +155,14 @@ struct APIClient: Sendable {
         return try decodeCard(data)
     }
 
+    /// Ask the server for a new original picture for an existing card (audio is kept).
+    func regenerateImage(slug: String) async throws -> Card {
+        let url = baseURL.appending(path: "v1/cards/\(slug)/image")
+        let (data, response) = try await data(for: jsonRequest(url: url, method: "POST", body: [:], timeout: Self.postTimeout))
+        try throwIfNeeded(response, data: data)
+        return try decodeCard(data)
+    }
+
     func deleteCard(slug: String) async throws {
         let url = baseURL.appending(path: "v1/cards/\(slug)")
         let (data, response) = try await data(for: methodRequest(url: url, method: "DELETE"))
