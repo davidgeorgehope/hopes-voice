@@ -1979,6 +1979,9 @@ struct CoreWordCell: View {
     var body: some View {
         VStack(spacing: 0) {
             PecsImageView(image: image, remoteURL: remoteURL, placeholderSize: 28)
+                // A small inset so the word-type color shows around the picture.
+                .padding(.horizontal, 5)
+                .padding(.top, 5)
                 .frame(maxWidth: .infinity)
                 .frame(height: chrome.coreImageHeight)
                 .background(backgroundColor ?? Theme.cream)
