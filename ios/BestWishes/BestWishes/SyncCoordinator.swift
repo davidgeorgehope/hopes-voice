@@ -47,8 +47,8 @@ final class SyncCoordinator {
     @ObservationIgnored private var loop: Task<Void, Never>?
     @ObservationIgnored private var debounce: Task<Void, Never>?
     @ObservationIgnored private var running = false
-    /// Extra safety check from the UI: edit mode open, an editor sheet showing, and so on.
-    @ObservationIgnored var isBusy: () -> Bool = { false }
+    /// Set by the UI while edit mode, settings, or an editor sheet is open. Updates wait.
+    @ObservationIgnored var isBusy = false
 
     init(
         store: CardStore,
@@ -207,7 +207,7 @@ final class SyncCoordinator {
     // MARK: Applying
 
     var isSafeToApply: Bool {
-        Date().timeIntervalSince(lastInteraction) >= idleSeconds && !isBusy() && store.strip.isEmpty && !store.isAdding
+        Date().timeIntervalSince(lastInteraction) >= idleSeconds && !isBusy && store.strip.isEmpty && !store.isAdding
     }
 
     private func applyIfSafe() {

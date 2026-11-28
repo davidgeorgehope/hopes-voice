@@ -28,7 +28,6 @@ struct ContentView: View {
     @State private var voice = VoiceRecognizer()
     @State private var pendingVoiceWord: String?
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.boardCellExpands) private var boardCellExpands
     @State private var viewWidth: CGFloat = Self.initialViewWidth
 
@@ -135,14 +134,8 @@ struct ContentView: View {
         .onPreferenceChange(BoardWidthPreference.self) { viewWidth = $0 }
         .environment(\.boardChrome, chrome)
         .task { await store.bootstrap() }
-        .onAppear {
-            sync?.isBusy = { mode.isEditing || showingSettings || editorDraft != nil }
-            sync?.start()
-            consumeLaunchArguments()
-        }
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active { sync?.sceneBecameActive() }
-        }
+        .onAppear { consumeLaunchArguments() }
+        .background(SyncHooks(sync: sync, busy: mode.isEditing || showingSettings || editorDraft != nil))
         .onChange(of: voice.finishedTranscript) { _, transcript in
             consumeVoiceTranscript(transcript)
         }

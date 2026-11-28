@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A10000000000000000000950 /* SyncHooks.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000950 /* SyncHooks.swift */; };
 		A10000000000000000000907 /* SyncEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000907 /* SyncEngineTests.swift */; };
 		A10000000000000000000906 /* SyncDocTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000906 /* SyncDocTests.swift */; };
 		A10000000000000000000905 /* SyncSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000905 /* SyncSettingsSection.swift */; };
@@ -83,6 +84,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A20000000000000000000950 /* SyncHooks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncHooks.swift; sourceTree = "<group>"; };
 		A20000000000000000000907 /* SyncEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncEngineTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000906 /* SyncDocTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncDocTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000905 /* SyncSettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncSettingsSection.swift; sourceTree = "<group>"; };
@@ -212,6 +214,7 @@
 				A2000000000000000000001A /* ProfileStore.swift */,
 				A2000000000000000000001F /* VoiceAdd.swift */,
 				A20000000000000000000905 /* SyncSettingsSection.swift */,
+				A20000000000000000000950 /* SyncHooks.swift */,
 				A20000000000000000000904 /* SyncCoordinator.swift */,
 				A20000000000000000000903 /* SyncPlanner.swift */,
 				A20000000000000000000902 /* SyncCredentials.swift */,
@@ -432,6 +435,7 @@
 				A1000000000000000000001A /* ProfileStore.swift in Sources */,
 				A1000000000000000000001F /* VoiceAdd.swift in Sources */,
 				A10000000000000000000905 /* SyncSettingsSection.swift in Sources */,
+				A10000000000000000000950 /* SyncHooks.swift in Sources */,
 				A10000000000000000000904 /* SyncCoordinator.swift in Sources */,
 				A10000000000000000000903 /* SyncPlanner.swift in Sources */,
 				A10000000000000000000902 /* SyncCredentials.swift in Sources */,
