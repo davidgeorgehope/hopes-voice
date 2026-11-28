@@ -124,18 +124,30 @@ jobs:
               "CODE_SIGNING_ALLOWED=NO",
               "-skipPackagePluginValidation",
           ]
-          print("+", " ".join(cmd), flush=True)
-          sys.exit(subprocess.call(cmd))
+          # Timing checks need a quiet machine, so they run on their own below, not alongside
+          # the other tests in parallel simulator clones.
+          main_cmd = cmd + ["-skip-testing:BestWishesTests/PerformanceTests"]
+          print("+", " ".join(main_cmd), flush=True)
+          rc = subprocess.call(main_cmd)
+          perf_cmd = cmd + [
+              "-only-testing:BestWishesTests/PerformanceTests",
+              "-parallel-testing-enabled", "NO",
+              "-resultBundlePath", "ios/DerivedData/perf.xcresult",
+          ]
+          print("+", " ".join(perf_cmd), flush=True)
+          rc_perf = subprocess.call(perf_cmd)
+          sys.exit(rc or rc_perf)
           PY
 
       - name: Show failed assertions and performance numbers
         if: always()
         run: |
           set +e
-          result=$(ls -d ios/DerivedData/Logs/Test/*.xcresult 2>/dev/null | tail -1)
-          [ -n "$result" ] || { echo "no xcresult"; exit 0; }
-          xcrun xcresulttool get test-results tests --path "$result" > /tmp/tests.json
-          python3 - <<'PY'
+          for result in ios/DerivedData/Logs/Test/*.xcresult ios/DerivedData/perf.xcresult; do
+            [ -d "$result" ] || continue
+            echo "== $result"
+            xcrun xcresulttool get test-results tests --path "$result" > /tmp/tests.json
+            python3 - <<'PY'
           import json
           def walk(node, trail):
               name = node.get("name", "")
@@ -146,6 +158,7 @@ jobs:
           for n in json.load(open("/tmp/tests.json")).get("testNodes", []):
               walk(n, [])
           PY
-          rm -rf /tmp/att && xcrun xcresulttool export attachments --path "$result" --output-path /tmp/att
-          grep -h "^PERF" /tmp/att/* 2>/dev/null | sort
+            rm -rf /tmp/att && xcrun xcresulttool export attachments --path "$result" --output-path /tmp/att
+            grep -h "^PERF" /tmp/att/* 2>/dev/null | sort
+          done
           exit 0
