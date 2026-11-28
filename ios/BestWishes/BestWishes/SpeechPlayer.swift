@@ -6,12 +6,29 @@ import OSLog
 final class SpeechPlayer: NSObject, AVAudioPlayerDelegate {
     static let shared = SpeechPlayer()
 
-    private var audioPlayer: AVAudioPlayer?
-    private var streamPlayer: AVPlayer?
+    /// Taps start audio on `audioQueue` so a tap never waits on the audio system, so these three
+    /// are read and written from both queues. `stateLock` guards them.
+    private let stateLock = NSLock()
+    private var _audioPlayer: AVAudioPlayer?
+    private var _streamPlayer: AVPlayer?
+    private var _playbackToken = UUID()
+    private var audioPlayer: AVAudioPlayer? {
+        get { stateLock.withLock { _audioPlayer } }
+        set { stateLock.withLock { _audioPlayer = newValue } }
+    }
+    private var streamPlayer: AVPlayer? {
+        get { stateLock.withLock { _streamPlayer } }
+        set { stateLock.withLock { _streamPlayer = newValue } }
+    }
+    private var playbackToken: UUID {
+        get { stateLock.withLock { _playbackToken } }
+        set { stateLock.withLock { _playbackToken = newValue } }
+    }
+    private let audioQueue = DispatchQueue(label: "com.davidgeorgehope.hopesvoice.audio", qos: .userInitiated)
     private var endObserver: NSObjectProtocol?
     private let synthesizer = AVSpeechSynthesizer()
+    private let sessionLock = NSLock()
     private var sessionReady = false
-    private var playbackToken = UUID()
 
     /// Slugs of the last Speak request, in play order. Set before audio starts.
     private(set) var lastSpeakSequence: [String] = []
@@ -89,25 +106,35 @@ final class SpeechPlayer: NSObject, AVAudioPlayerDelegate {
             NotificationCenter.default.removeObserver(endObserver)
             self.endObserver = nil
         }
-        if synthesizer.isSpeaking { synthesizer.stopSpeaking(at: .immediate) }
+        audioQueue.async { [synthesizer] in
+            if synthesizer.isSpeaking { synthesizer.stopSpeaking(at: .immediate) }
+        }
     }
 
     private func playNow(card: Card, cache: AssetCache, api: APIClient) {
         let local = cache.audioURL(for: card.slug)
         if cache.hasAudio(card.slug) {
-            do {
-                let player = try AVAudioPlayer(contentsOf: local)
-                player.delegate = self
-                player.prepareToPlay()
-                player.play()
-                audioPlayer = player
-                SpeakTrace.log("speak cached mp3 slug=\(card.slug) audio=\(local.path)")
-                return
-            } catch {
-                SpeakTrace.log("local mp3 failed, not fetching remote: \(error)")
-                speakFallback(card.word)
-                return
+            let token = playbackToken
+            let word = card.word
+            let slug = card.slug
+            // Creating and starting the player can wait on the audio system (hundreds of ms
+            // right after launch). Do it off the main thread; the visual tap feedback is instant.
+            audioQueue.async { [self] in
+                do {
+                    let player = try AVAudioPlayer(contentsOf: local)
+                    player.delegate = self
+                    player.prepareToPlay()
+                    guard playbackToken == token else { return } // a newer tap or Stop replaced this one
+                    audioPlayer = player
+                    player.play()
+                    if playbackToken != token { player.stop() }
+                    SpeakTrace.log("speak cached mp3 slug=\(slug) audio=\(local.path)")
+                } catch {
+                    SpeakTrace.log("local mp3 failed, not fetching remote: \(error)")
+                    speakFallback(word)
+                }
             }
+            return
         }
 
         if let remote = api.absoluteURL(for: card.audioURL) {
@@ -170,19 +197,40 @@ final class SpeechPlayer: NSObject, AVAudioPlayerDelegate {
     }
 
     private func speakFallback(_ word: String) {
-        let utterance = AVSpeechUtterance(string: word)
-        if let voice = AVSpeechSynthesisVoice(identifier: voiceSettings.voiceId) {
-            utterance.voice = voice
-        } else {
-            utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+        let settings = voiceSettings
+        audioQueue.async { [self] in
+            let utterance = AVSpeechUtterance(string: word)
+            if let voice = AVSpeechSynthesisVoice(identifier: settings.voiceId) {
+                utterance.voice = voice
+            } else {
+                utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+            }
+            let rate = max(0.1, min(settings.rate, 2.0))
+            utterance.rate = AVSpeechUtteranceDefaultSpeechRate * (0.92 * Float(rate))
+            utterance.pitchMultiplier = Float(max(0.5, min(settings.pitch, 2.0))) * 1.05
+            synthesizer.speak(utterance)
         }
-        let rate = max(0.1, min(voiceSettings.rate, 2.0))
-        utterance.rate = AVSpeechUtteranceDefaultSpeechRate * (0.92 * Float(rate))
-        utterance.pitchMultiplier = Float(max(0.5, min(voiceSettings.pitch, 2.0))) * 1.05
-        synthesizer.speak(utterance)
     }
 
+    /// Set up the audio session off the main thread. Called at launch, and again by any tap that
+    /// finds the session not ready, so no tap ever waits for it: activating the session can take
+    /// hundreds of milliseconds, and seconds on a simulator.
+    func warmUp() {
+        DispatchQueue.global(qos: .userInitiated).async { [self] in
+            activateSession()
+        }
+    }
+
+    /// Never blocks. If the session is ready this is a no-op; otherwise setup continues in the
+    /// background and this tap plays with whatever session is current.
     private func prepareSession() {
+        // A plain read: taking `sessionLock` here would wait for a setup that is in progress.
+        if !sessionReady { warmUp() }
+    }
+
+    private func activateSession() {
+        guard sessionLock.try() else { return } // another setup is already running
+        defer { sessionLock.unlock() }
         guard !sessionReady else { return }
         do {
             let session = AVAudioSession.sharedInstance()
@@ -201,21 +249,25 @@ private final class PlaybackDone: @unchecked Sendable {
 
 enum SpeakTrace {
     private static let logger = Logger(subsystem: "com.davidgeorgehope.hopesvoice", category: "speak")
+    /// File appends happen here, never on the main thread: a tap must not wait on disk.
+    private static let fileQueue = DispatchQueue(label: "com.davidgeorgehope.hopesvoice.speaktrace", qos: .utility)
 
     static func log(_ message: String) {
         let line = "Hope's Voice: \(message)"
-        print(line)
-        fflush(stdout)
         logger.info("\(message, privacy: .public)")
-        guard let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
-        let url = dir.appendingPathComponent("speak.log")
-        let data = Data((line + "\n").utf8)
-        if FileManager.default.fileExists(atPath: url.path), let handle = try? FileHandle(forWritingTo: url) {
-            defer { try? handle.close() }
-            handle.seekToEndOfFile()
-            handle.write(data)
-        } else {
-            try? data.write(to: url, options: .atomic)
+        fileQueue.async {
+            print(line)
+            fflush(stdout)
+            guard let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+            let url = dir.appendingPathComponent("speak.log")
+            let data = Data((line + "\n").utf8)
+            if FileManager.default.fileExists(atPath: url.path), let handle = try? FileHandle(forWritingTo: url) {
+                defer { try? handle.close() }
+                handle.seekToEndOfFile()
+                handle.write(data)
+            } else {
+                try? data.write(to: url, options: .atomic)
+            }
         }
     }
 }

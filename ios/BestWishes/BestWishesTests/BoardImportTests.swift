@@ -278,7 +278,11 @@ final class BoardImportTests: XCTestCase {
 
         let store = CardStore(cache: AssetCache(root: root.appendingPathComponent("cache")), player: SpeechPlayer())
         try store.importBoard(from: dest)
-        XCTAssertNotNil(store.image(for: Card(word: "help", slug: "help", imageURL: "", audioURL: "")), "the local original should be cached under the cell id")
+        XCTAssertTrue(store.cache.hasImage("help"), "the local original should be cached under the cell id")
+        XCTAssertNotNil(
+            store.thumbnails.loadSynchronously(store.cache.imageURL(for: "help")),
+            "and it should decode to a thumbnail"
+        )
     }
 
     @MainActor

@@ -64,6 +64,10 @@
 		A10000000000000000000021 /* VoiceAddTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* VoiceAddTests.swift */; };
 		A10000000000000000000022 /* Speech.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* Speech.framework */; };
 		B10000000000000000000001 /* HoldToEditUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* HoldToEditUITests.swift */; };
+		B10000000000000000000010 /* PerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000010 /* PerformanceTests.swift */; };
+		B10000000000000000000011 /* ThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000011 /* ThumbnailCache.swift */; };
+		B10000000000000000000012 /* ThumbnailCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000012 /* ThumbnailCacheTests.swift */; };
+		B10000000000000000000013 /* ConditionalFetchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000013 /* ConditionalFetchTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -144,6 +148,10 @@
 		A20000000000000000000022 /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
 		B20000000000000000000001 /* HoldToEditUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldToEditUITests.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* BestWishesUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BestWishesUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20000000000000000000010 /* PerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000011 /* ThumbnailCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCache.swift; sourceTree = "<group>"; };
+		B20000000000000000000012 /* ThumbnailCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCacheTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000013 /* ConditionalFetchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionalFetchTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -190,6 +198,7 @@
 				A20000000000000000000001 /* BestWishesApp.swift */,
 				A20000000000000000000002 /* ContentView.swift */,
 				A20000000000000000000003 /* Theme.swift */,
+				B20000000000000000000011 /* ThumbnailCache.swift */,
 				A20000000000000000000023 /* PecsImage.swift */,
 				A20000000000000000000024 /* BoardChrome.swift */,
 				A20000000000000000000027 /* GridCoord.swift */,
@@ -267,6 +276,9 @@
 				A20000000000000000000021 /* VoiceAddTests.swift */,
 				A20000000000000000000907 /* SyncEngineTests.swift */,
 				A20000000000000000000906 /* SyncDocTests.swift */,
+				B20000000000000000000010 /* PerformanceTests.swift */,
+				B20000000000000000000013 /* ConditionalFetchTests.swift */,
+				B20000000000000000000012 /* ThumbnailCacheTests.swift */,
 			);
 			path = BestWishesTests;
 			sourceTree = "<group>";
@@ -411,6 +423,7 @@
 				A10000000000000000000001 /* BestWishesApp.swift in Sources */,
 				A10000000000000000000002 /* ContentView.swift in Sources */,
 				A10000000000000000000003 /* Theme.swift in Sources */,
+				B10000000000000000000011 /* ThumbnailCache.swift in Sources */,
 				A10000000000000000000023 /* PecsImage.swift in Sources */,
 				A10000000000000000000024 /* BoardChrome.swift in Sources */,
 				A10000000000000000000027 /* GridCoord.swift in Sources */,
@@ -450,6 +463,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1000000000000000000000C /* SentenceStripTests.swift in Sources */,
+				B10000000000000000000010 /* PerformanceTests.swift in Sources */,
+				B10000000000000000000013 /* ConditionalFetchTests.swift in Sources */,
+				B10000000000000000000012 /* ThumbnailCacheTests.swift in Sources */,
 				A10000000000000000000025 /* PecsImageTests.swift in Sources */,
 				A10000000000000000000026 /* BoardChromeTests.swift in Sources */,
 				A10000000000000000000032 /* EditWorkflowTests.swift in Sources */,

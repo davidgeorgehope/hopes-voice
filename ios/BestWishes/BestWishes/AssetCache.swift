@@ -180,6 +180,32 @@ final class AssetCache: Sendable {
         loadBoardFile()[Self.boardKey(folderId)]
     }
 
+    /// Validator (`ETag`) of the board snapshot saved for this folder, if any.
+    func boardETag(folderId: String?) -> String? {
+        loadETagFile()[Self.boardKey(folderId)]
+    }
+
+    func saveBoardETag(_ etag: String?, folderId: String?) {
+        var file = loadETagFile()
+        if let etag, !etag.isEmpty {
+            file[Self.boardKey(folderId)] = etag
+        } else {
+            file.removeValue(forKey: Self.boardKey(folderId))
+        }
+        do {
+            try JSONEncoder().encode(file).write(to: boardETagsURL, options: .atomic)
+        } catch {
+            print("BestWishes: failed to persist board validators: \(error)")
+        }
+    }
+
+    private var boardETagsURL: URL { root.appendingPathComponent("board-etags.json") }
+
+    private func loadETagFile() -> [String: String] {
+        guard let data = try? Data(contentsOf: boardETagsURL) else { return [:] }
+        return (try? JSONDecoder().decode([String: String].self, from: data)) ?? [:]
+    }
+
     /// Local hide overlay. Not a server DELETE — persists next to grouping.json.
     func saveHiddenSlugs(_ slugs: Set<String>, for profile: KidProfile) {
         defer { noteChange(profile) }
@@ -368,28 +394,71 @@ final class AssetCache: Sendable {
         return Set(list)
     }
 
-    func ensureAssets(for card: Card, api: APIClient) async {
-        await withTaskGroup(of: Void.self) { group in
-            if !isLocalImage(card.slug), !hasImage(card.slug), let remote = api.absoluteURL(for: card.imageURL) {
+    /// Make sure the card's picture and voice are on disk. Missing files are downloaded. With
+    /// `revalidate`, files already on disk are checked with a conditional GET (`If-None-Match`,
+    /// or `If-Modified-Since` for files saved before validators were kept) and replaced only if
+    /// the server has a newer one. Returns true if the picture file changed.
+    @discardableResult
+    func ensureAssets(for card: Card, api: APIClient, revalidate: Bool = false) async -> Bool {
+        let imageChanged = await withTaskGroup(of: Bool.self) { group -> Bool in
+            if !isLocalImage(card.slug), let remote = api.absoluteURL(for: card.imageURL) {
                 group.addTask {
-                    do { try await api.download(remote, to: self.imageURL(for: card.slug)) }
-                    catch { print("BestWishes: image cache failed for \(card.slug): \(error)") }
+                    await self.fetch(remote, to: self.imageURL(for: card.slug), api: api, revalidate: revalidate, label: "image \(card.slug)")
                 }
             }
-            if !card.audioURL.isEmpty, !hasAudio(card.slug), let remote = api.absoluteURL(for: card.audioURL) {
+            if !card.audioURL.isEmpty, let remote = api.absoluteURL(for: card.audioURL) {
                 group.addTask {
-                    do { try await api.download(remote, to: self.audioURL(for: card.slug)) }
-                    catch { print("BestWishes: audio cache failed for \(card.slug): \(error)") }
+                    _ = await self.fetch(remote, to: self.audioURL(for: card.slug), api: api, revalidate: revalidate, label: "audio \(card.slug)")
+                    return false
                 }
             }
+            var changed = false
+            for await result in group where result { changed = true }
+            return changed
         }
+        return imageChanged
     }
 
-    func ensureAssets(for folder: BoardFolder, api: APIClient) async {
-        guard let path = folder.imageURL, !path.isEmpty else { return }
-        if !hasImage(folder.id), let remote = api.absoluteURL(for: path) {
-            do { try await api.download(remote, to: imageURL(for: folder.id)) }
-            catch { print("BestWishes: folder image cache failed for \(folder.id): \(error)") }
+    @discardableResult
+    func ensureAssets(for folder: BoardFolder, api: APIClient, revalidate: Bool = false) async -> Bool {
+        guard let path = folder.imageURL, !path.isEmpty, let remote = api.absoluteURL(for: path) else { return false }
+        return await fetch(remote, to: imageURL(for: folder.id), api: api, revalidate: revalidate, label: "folder image \(folder.id)")
+    }
+
+    private func validatorURL(for file: URL) -> URL {
+        file.deletingPathExtension().appendingPathExtension("etag")
+    }
+
+    /// Download if missing; if present and `revalidate`, ask the server whether it changed.
+    /// Returns true when the file was written.
+    private func fetch(_ remote: URL, to local: URL, api: APIClient, revalidate: Bool, label: String) async -> Bool {
+        let exists = fileManager.fileExists(atPath: local.path)
+        if exists && !revalidate { return false }
+        let validator = validatorURL(for: local)
+        var etag: String?
+        var modified: Date?
+        if exists {
+            etag = (try? String(contentsOf: validator, encoding: .utf8))?.trimmingCharacters(in: .whitespacesAndNewlines)
+            if etag?.isEmpty ?? true {
+                etag = nil
+                modified = (try? fileManager.attributesOfItem(atPath: local.path))?[.modificationDate] as? Date
+            }
+        }
+        do {
+            switch try await api.download(remote, to: local, ifNoneMatch: etag, ifModifiedSince: modified) {
+            case .notModified:
+                return false
+            case .downloaded(let newTag):
+                if let newTag, !newTag.isEmpty {
+                    try? Data(newTag.utf8).write(to: validator, options: .atomic)
+                } else {
+                    try? fileManager.removeItem(at: validator)
+                }
+                return true
+            }
+        } catch {
+            print("BestWishes: cache failed for \(label): \(error)")
+            return false
         }
     }
 
