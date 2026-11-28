@@ -8,7 +8,7 @@ A real child's file is private family data: it never goes in git. It's loaded on
 ```json
 {
   "format": "bestwishes.board/v1",
-  "source": "proloquo2go-manual-transcription",   // free text: where it came from
+  "source": "manual-transcription",             // free text: where it came from
   "profile": { ... },
   "boards": [ ... ]
 }
@@ -71,14 +71,15 @@ The app also ships `backend/scripts/validate_board.py` for the same all-or-nothi
   "target": "food",                   // folder cells: id of board to open
   "action": null,                     // action cells: back | home | clear | delete-last | speak-bar
   "addToMessage": true,               // false = speaks but doesn't go in the message bar
-  "hidden": false                     // kept in layout but not shown (P2G-style hide)
+  "hidden": false                     // kept in layout but not shown (hide without deleting)
 }
 ```
 
 ## Rules
 - Exact position (board, row, col) is the contract: the kid's motor memory depends on it.
 - Unknown fields are kept under `"extra"` and ignored, so transcriptions can carry notes.
-- Proprietary symbols (e.g. SymbolStix) are never copied in. Pictures default to `generate`
+- A folder cell whose `extra` has `sourceWordClass` (any value) is treated as a grammar folder: tapping it also adds its word to the message bar. An older name for the same key is still read.
+- Proprietary symbol sets are never copied in. Pictures default to `generate`
   (original xAI picture from the server), or `file` for family photos.
 - Validation on import: unique ids, no two cells in one position, every `target` exists,
   every board fits its grid. Errors are listed, nothing is half-imported.

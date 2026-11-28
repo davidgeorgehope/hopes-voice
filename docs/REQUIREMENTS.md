@@ -4,15 +4,15 @@ This is the durable product brief. Open issues and `STATUS.md` should stay align
 
 ## Mission
 
-Hope's Voice is a free, $0 AAC (augmentative and alternative communication) app that any family can use. It is an alternative to Proloquo2Go (about $250). A child who needs a talking board should not have to wait on a paid license.
+Hope's Voice is a free, $0 AAC (augmentative and alternative communication) app that any family can use. It is an alternative to paid AAC apps, which can cost hundreds of dollars. A child who needs a talking board should not have to wait on a paid license.
 
-This project is not affiliated with Proloquo2Go or AssistiveWare. We mention Proloquo2Go only as the paid app this is an alternative to.
+Not affiliated with any commercial AAC vendor.
 
 ## Familiar layout, original assets
 
-The app should work mostly like Proloquo2Go in layout and interaction — message bar, grid, folders, core words, color-by-word-type, edit/hide — so a kid who already uses a paid AAC app can switch without relearning. Teachers and therapists who already know Proloquo2Go should be able to use Hope's Voice without relearning the editor either. This is a layout-and-interaction match only. We never copy Proloquo2Go branding, voices, or symbols.
+The app should work like the familiar AAC apps in layout and interaction — message bar, grid, folders, core words, color-by-word-type, edit/hide — so a kid who already uses a paid AAC app can switch without relearning. Teachers and therapists who already know a paid AAC app should be able to use Hope's Voice without relearning the editor either. This is a layout-and-interaction match only. We never copy another app's branding, voices, or symbols.
 
-Priority P2G-familiar workflow:
+Priority familiar-AAC workflow:
 
 - A visible but low-contrast Edit / lock control in the top toolbar. Unlock is kid-proof (long-press or two-finger hold). Once unlocked, Edit mode is obvious, and there is a clear “+ Add button” action (type or mic).
 - In Edit, tapping a button opens a button editor: label, spoken text, picture (generate a new symbol or pick a photo on the device), border / background color, and folder link.
@@ -22,7 +22,7 @@ Priority P2G-familiar workflow:
 - Folder Home / Back navigation, with folder buttons visually distinct (a tab / folder shape). Returning home after a folder selection is configurable.
 - Fitzgerald-style part-of-speech border or background colors, configurable, with a custom override later.
 
-All symbols are original (AI-generated PECS-style pictures, open-symbol fallbacks, or a family’s own files). We never copy Proloquo2Go, SymbolStix, or other proprietary assets, voices, or branding.
+All symbols are original (AI-generated PECS-style pictures, open-symbol fallbacks, or a family’s own files). We never copy proprietary symbol sets, assets, voices, or branding.
 
 ## Stack
 
@@ -52,7 +52,7 @@ The public import format for a full setup is `bestwishes.board/v1` (`IMPORT_FORM
 
 ## First milestone
 
-Recreate **one child's** existing Proloquo2Go setup exactly — same buttons, folders, positions, and behavior — for **the first family**.
+Recreate **one child's** existing AAC setup exactly — same buttons, folders, positions, and behavior — for **the first family**.
 
 That setup arrives as a **private** import file. It never enters this repo (`private/`, `*.private.json`, and `imports/` are gitignored). Agents and contributors must not commit family boards, photos, or recordings.
 

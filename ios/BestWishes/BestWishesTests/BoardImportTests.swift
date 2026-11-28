@@ -141,12 +141,19 @@ final class BoardImportTests: XCTestCase {
             id: "i", row: 0, col: 2, type: "folder", label: "I",
             speak: nil, pos: nil, bg: nil, border: nil, image: nil,
             target: "i", action: nil, addToMessage: nil, hidden: false,
-            extra: ["p2gWordClass": .int(0)]
+            extra: ["sourceWordClass": .int(0)]
+        )
+        let olderGrammar = BoardImportCell(
+            id: "i2", row: 0, col: 3, type: "folder", label: "I",
+            speak: nil, pos: nil, bg: nil, border: nil, image: nil,
+            target: "i", action: nil, addToMessage: nil, hidden: false,
+            extra: [BoardImport.sourceWordClassKeys[1]: .int(0)]
         )
         let behavior = BoardImportFolderBehavior.default
         XCTAssertTrue(BoardImport.folderAddsToMessage(flagged, behavior: behavior))
         XCTAssertFalse(BoardImport.folderAddsToMessage(category, behavior: behavior))
         XCTAssertTrue(BoardImport.folderAddsToMessage(grammar, behavior: behavior))
+        XCTAssertTrue(BoardImport.folderAddsToMessage(olderGrammar, behavior: behavior), "older key still read")
         XCTAssertTrue(BoardImport.wordAddsToMessage(BoardImportCell(
             id: "help", row: 0, col: 3, type: "word", label: "help",
             speak: nil, pos: nil, bg: nil, border: nil, image: nil,

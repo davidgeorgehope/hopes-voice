@@ -3,9 +3,9 @@
 [![backend](https://github.com/davidgeorgehope/hopes-voice/actions/workflows/backend.yml/badge.svg)](https://github.com/davidgeorgehope/hopes-voice/actions/workflows/backend.yml)
 [![ios](https://github.com/davidgeorgehope/hopes-voice/actions/workflows/ios.yml/badge.svg)](https://github.com/davidgeorgehope/hopes-voice/actions/workflows/ios.yml)
 
-A free, open-source AAC (augmentative and alternative communication) app for families. Hope's Voice is a $0 alternative to Proloquo2Go (about $250). A child who needs a talking board should not have to wait on a paid license.
+A free, open-source AAC (augmentative and alternative communication) app for families. Hope's Voice is a $0 alternative to paid AAC apps, which can cost hundreds of dollars. A child who needs a talking board should not have to wait on a paid license.
 
-Layout and interaction follow familiar AAC patterns — a message bar, a grid of buttons, folders, core words, and color-by-word-type — so a kid who already uses a paid AAC app can switch without relearning. All symbols are original AI-generated PECS-style pictures. This project is not affiliated with Proloquo2Go or AssistiveWare; we mention Proloquo2Go only as the paid app this is an alternative to.
+Layout and interaction follow familiar AAC patterns — a message bar, a grid of buttons, folders, core words, and color-by-word-type — so a kid who already uses a paid AAC app can switch without relearning. All symbols are original AI-generated PECS-style pictures. Not affiliated with any commercial AAC vendor.
 
 The full brief lives in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md). A short weekly status note is in [`STATUS.md`](STATUS.md).
 

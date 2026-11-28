@@ -276,12 +276,15 @@ enum BoardImport {
         if let speak = cell.speak, !speak.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return true
         }
-        // P2G grammar folders often carry a word class in extra; category folders do not.
-        if let raw = cell.extra["p2gWordClass"], raw.isPresent {
-            return true
+        // Grammar folders often carry a word class in extra; category folders do not.
+        for key in sourceWordClassKeys {
+            if let raw = cell.extra[key], raw.isPresent { return true }
         }
         return false
     }
+
+    /// `sourceWordClass` in a cell's extra, plus the older name earlier transcriptions used.
+    static let sourceWordClassKeys = ["sourceWordClass", "p2gWordClass"]
 
     static func wordAddsToMessage(_ cell: BoardImportCell) -> Bool {
         cell.addToMessage ?? true

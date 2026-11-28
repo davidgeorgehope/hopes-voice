@@ -55,7 +55,7 @@ final class GridLayout {
         defaults.set(next, forKey: Self.rowsKey(for: profile))
     }
 
-    /// Apply the P2G-style default (4×6 on iPad, 3×4 on iPhone) only when this
+    /// Apply the usual AAC default (4×6 on iPad, 3×4 on iPhone) only when this
     /// profile has no saved size yet. Existing 2/3/4 choices are left alone.
     func applySizeClassDefaultsIfNeeded(isCompact: Bool) {
         if !Self.hasSavedColumns(defaults: defaults, profile: profile) {
