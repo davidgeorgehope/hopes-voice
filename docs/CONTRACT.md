@@ -15,7 +15,8 @@ Product lock: iPad never calls xAI. All PECS + TTS generation is server-side.
 | GET | `/v1/board?folder_id={slug}` | Ordered children of a folder |
 | GET | `/v1/cards` | Flat word-card list (legacy-compatible) |
 | GET | `/v1/cards/{slug}` | One word card (or folder stub) |
-| POST | `/v1/cards` | Create/generate word card; optional `folder_id` |
+| POST | `/v1/cards` | Create/generate word card; optional `folder_id`, `hint` |
+| POST | `/v1/cards/{slug}/image` | New picture for a card (audio kept); optional `hint` |
 | DELETE | `/v1/cards/{slug}` | Delete word card + assets |
 | POST | `/v1/folders` | Create folder stub (no xAI) |
 | DELETE | `/v1/folders/{slug}` | Delete folder; **children move to root** |
@@ -87,6 +88,10 @@ Request:
 ```
 
 `folder_id` optional (`null` / omit = root). If the slug already exists, assets are **not** regenerated; membership is updated.
+
+`hint` optional: what the word means for the picture, e.g. `{ "word": "can", "hint": "able to" }`, so a word with several senses gets the right one. Up to 80 characters are used. It is saved on the card.
+
+`POST /v1/cards/{slug}/image` takes an optional body `{ "hint": "able to" }`. A new hint replaces the saved one; no body reuses the saved hint.
 
 Response includes `kind: "word"` and `folder_id`.
 

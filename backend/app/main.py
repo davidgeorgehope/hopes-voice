@@ -92,8 +92,28 @@ def slugify(word: str) -> str:
     return s or "card"
 
 
-def pecs_prompt(word: str) -> str:
-    return PECS_PROMPT_TEMPLATE.format(word=word.strip())
+#: Longest meaning hint kept, so a hint can steer the picture but never replace the prompt.
+HINT_MAX_CHARS = 80
+
+
+def clean_hint(hint: str | None) -> str | None:
+    """One line, single spaces, at most HINT_MAX_CHARS. Blank means no hint."""
+    if not hint:
+        return None
+    text = " ".join(hint.split())[:HINT_MAX_CHARS].strip()
+    return text or None
+
+
+def pecs_prompt(word: str, hint: str | None = None) -> str:
+    prompt = PECS_PROMPT_TEMPLATE.format(word=word.strip())
+    hint = clean_hint(hint)
+    if hint:
+        # e.g. "can" + "able to": show the ability, not a tin can.
+        prompt += (
+            f" The word \"{word.strip()}\" here means: {hint}. Show that meaning only, "
+            "not any other sense of the word."
+        )
+    return prompt
 
 
 def meta_path(slug: str) -> Path:
@@ -321,10 +341,12 @@ def folder_stub(folder: dict[str, Any]) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-async def generate_image(client: httpx.AsyncClient, word: str, dest: Path) -> dict[str, Any]:
+async def generate_image(
+    client: httpx.AsyncClient, word: str, dest: Path, hint: str | None = None
+) -> dict[str, Any]:
     """Call xAI image generations; download PNG promptly to dest."""
     api_key = load_xai_api_key()
-    prompt = pecs_prompt(word)
+    prompt = pecs_prompt(word, hint)
     payload = {
         "model": IMAGE_MODEL,
         "prompt": prompt,
@@ -426,6 +448,20 @@ class CreateCardRequest(BaseModel):
     folder_id: str | None = Field(
         default=None,
         description="Parent folder slug, or null/omit for root",
+    )
+    hint: str | None = Field(
+        default=None,
+        max_length=200,
+        description="Optional meaning for the picture, e.g. 'able to' for 'can'",
+        examples=["able to"],
+    )
+
+
+class RegenerateImageRequest(BaseModel):
+    hint: str | None = Field(
+        default=None,
+        max_length=200,
+        description="Optional meaning for the new picture; omit to reuse the card's saved hint",
     )
 
 
@@ -577,12 +613,20 @@ def _set_card_folder(board: dict[str, Any], slug: str, folder_id: str | None) ->
             board["root_order"].append(slug)
 
 
+async def _generate_image(client: httpx.AsyncClient, word: str, dest: Path, hint: str | None) -> dict[str, Any]:
+    """Pass the hint only when there is one, so plain words call generate_image as before."""
+    if hint:
+        return await generate_image(client, word, dest, hint=hint)
+    return await generate_image(client, word, dest)
+
+
 @app.post("/v1/cards", response_model=CardResponse)
 async def create_card(body: CreateCardRequest) -> CardResponse:
     word = body.word.strip()
     if not word:
         raise HTTPException(status_code=400, detail="word is required")
     slug = slugify(word)
+    hint = clean_hint(body.hint)
     folder_id = body.folder_id.strip() if body.folder_id else None
     if folder_id == "":
         folder_id = None
@@ -629,7 +673,7 @@ async def create_card(body: CreateCardRequest) -> CardResponse:
         )
 
     async with httpx.AsyncClient() as client:
-        img_info = await generate_image(client, word, image_file)
+        img_info = await _generate_image(client, word, image_file, hint)
         tts_info = await generate_tts(client, word, audio_file)
 
     now = utc_now()
@@ -648,6 +692,8 @@ async def create_card(body: CreateCardRequest) -> CardResponse:
         "tts_voice": tts_info["voice_id"],
         "prompt": img_info["prompt"],
     }
+    if hint:
+        meta["hint"] = hint
     write_meta(slug, meta)
 
     _set_card_folder(board, slug, folder_id)
@@ -698,7 +744,7 @@ def _take_regen_budget() -> None:
 
 
 @app.post("/v1/cards/{slug}/image", response_model=CardResponse)
-async def regenerate_card_image(slug: str) -> CardResponse:
+async def regenerate_card_image(slug: str, body: RegenerateImageRequest | None = None) -> CardResponse:
     """Make a new original picture for an existing card. Audio is kept.
 
     The previous picture is kept next to it as ``image.prev.png``. The asset URL does not
@@ -720,9 +766,11 @@ async def regenerate_card_image(slug: str) -> CardResponse:
     _take_regen_budget()
 
     word = meta.get("word") or slug
+    # A new hint replaces the saved one; no hint reuses it.
+    hint = clean_hint(body.hint if body else None) or meta.get("hint")
     fresh = card_dir / "image.new.png"
     async with httpx.AsyncClient() as client:
-        img_info = await generate_image(client, word, fresh)
+        img_info = await _generate_image(client, word, fresh, hint)
     if image_file.is_file():
         shutil.copy2(image_file, card_dir / "image.prev.png")
     os.replace(fresh, image_file)
@@ -739,6 +787,8 @@ async def regenerate_card_image(slug: str) -> CardResponse:
             "image_revision": int(meta.get("image_revision", 0)) + 1,
         }
     )
+    if hint:
+        meta["hint"] = hint
     meta.setdefault("audio_path", str(card_dir / "audio.mp3"))
     meta.setdefault("audio_url", urls["audio_url"])
     meta.setdefault("created_at", utc_now())
