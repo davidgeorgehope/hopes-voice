@@ -18,6 +18,8 @@ struct ContentView: View {
     @State private var draggingItemID: String?
     @State private var showingHidden = false
     @State private var editorDraft: ButtonEditorDraft?
+    /// Word whose grammar forms are showing after a long-press.
+    @State private var formsCard: Card?
     @State private var editorBusy = false
     @State private var showingSettings = false
     @State private var showingImporter = false
@@ -215,6 +217,17 @@ struct ContentView: View {
             }
         } message: {
             Text("Only this iPad sees “\(renameDraft.isEmpty ? pendingRenameFallback : renameDraft)”. Speak still uses the original voice.")
+        }
+        .sheet(item: $formsCard) { card in
+            WordFormsSheet(
+                word: store.displayLabel(for: card),
+                forms: store.wordForms(for: card),
+                onPick: { form in
+                    store.tapForm(card, form: form)
+                    formsCard = nil
+                }
+            )
+            .presentationDetents([.height(chrome.isCompact ? 300 : 340)])
         }
         .sheet(isPresented: editorPresented) {
             if editorDraft != nil {
@@ -1104,7 +1117,7 @@ struct ContentView: View {
                             ForEach(store.strip.chips) { chip in
                                 StripChipView(
                                     card: chip.card,
-                                    label: store.displayLabel(for: chip.card),
+                                    label: store.chipLabel(chip),
                                     image: store.image(for: chip.card),
                                     remoteURL: store.remoteImageURL(for: chip.card)
                                 )
@@ -1202,7 +1215,7 @@ struct ContentView: View {
                     } else {
                         ForEach(store.strip.chips) { chip in
                             VStack(spacing: 2) {
-                                Text(store.displayLabel(for: chip.card))
+                                Text(store.chipLabel(chip))
                                     .font(.system(size: 13, weight: .bold, design: .serif).italic())
                                     .foregroundStyle(Color(white: 0.82))
                                     .lineLimit(1)
@@ -1370,6 +1383,7 @@ struct ContentView: View {
                 )
             }
             .opacity(dimmed ? 0.45 : 1)
+            .onLongPressGesture(minimumDuration: 0.45) { showForms(card) }
             .onTapGesture { handleBoardTap(item, at: coord) }
             .modifier(BoardReorderSupport(
                 itemID: item.id,
@@ -1380,6 +1394,7 @@ struct ContentView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { handleBoardTap(item, at: coord) }
+            .accessibilityAction(named: "Word forms") { showForms(card) }
             .accessibilityLabel(label)
             .accessibilityHint("Adds this word to the sentence")
             .accessibilityIdentifier("card-\(card.slug)")
@@ -1518,6 +1533,12 @@ struct ContentView: View {
         if !mode.isEditing {
             mode.enterEdit()
         }
+    }
+
+    /// Long-press a word (not in Edit) for its plural, tenses, or other forms.
+    private func showForms(_ card: Card) {
+        guard !mode.isEditing, store.wordForms(for: card).count > 1 else { return }
+        formsCard = card
     }
 
     private func handleBoardTap(_ item: BoardItem, at coord: GridCoord?) {
@@ -2266,4 +2287,38 @@ private struct BoardReorderDropDelegate: DropDelegate {
 
 #Preview("iPad") {
     ContentView(store: CardStore())
+}
+
+/// Long-press word forms: big buttons for each form; tapping one adds it to the message bar.
+struct WordFormsSheet: View {
+    let word: String
+    let forms: [String]
+    let onPick: (String) -> Void
+    @Environment(\.boardChrome) private var chrome
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Text("Forms of “\(word)”")
+                .font(.system(.headline, design: .rounded).weight(.heavy))
+                .foregroundStyle(Theme.ink)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: min(forms.count, 3)), spacing: 12) {
+                ForEach(forms, id: \.self) { form in
+                    Button { onPick(form) } label: {
+                        Text(form)
+                            .font(.system(size: chrome.isCompact ? 22 : 26, weight: .heavy, design: .rounded))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.6)
+                            .frame(maxWidth: .infinity, minHeight: chrome.isCompact ? 60 : 72)
+                            .foregroundStyle(Theme.cream)
+                            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Theme.labelWell))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("wordForm-\(form)")
+                }
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Theme.cream)
+    }
 }
