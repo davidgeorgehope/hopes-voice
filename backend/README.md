@@ -84,3 +84,7 @@ pytest
 ```
 
 Tests use a temporary `BESTWISHES_DATA_DIR` and mock xAI image/TTS calls. They must pass without a real `XAI_API_KEY`.
+
+## Remote board sync
+
+Authenticated, versioned boards per profile, with a small CLI (`scripts/hv_sync.py`). Set `HOPESVOICE_ADMIN_TOKEN` (name only; never commit the value). See [`docs/SYNC.md`](../docs/SYNC.md).

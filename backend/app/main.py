@@ -21,6 +21,7 @@ from typing import Any
 import httpx
 
 from app.image_trim import trim_and_pad_file
+from app.sync import router as sync_router
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -717,6 +718,8 @@ async def delete_card(slug: str) -> dict[str, Any]:
     save_board(reconcile_board(board))
     return {"ok": True, "deleted": slug}
 
+
+app.include_router(sync_router)
 
 # Static assets: /assets/<slug>/image.png etc.
 app.mount("/assets", StaticFiles(directory=str(DATA_DIR)), name="assets")
