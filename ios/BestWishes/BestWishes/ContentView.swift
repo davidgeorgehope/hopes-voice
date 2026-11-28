@@ -21,6 +21,7 @@ struct ContentView: View {
     /// Word whose grammar forms are showing after a long-press.
     @State private var formsCard: Card?
     @State private var showingKeyboard = false
+    @State private var showingPhrases = false
     @State private var editorBusy = false
     @State private var showingSettings = false
     @State private var showingImporter = false
@@ -243,6 +244,9 @@ struct ContentView: View {
         .fullScreenCover(isPresented: $showingKeyboard) {
             KeyboardPage(store: store, onClose: { showingKeyboard = false })
         }
+        .sheet(isPresented: $showingPhrases) {
+            PhrasesSheet(store: store, canEdit: mode.showsAddChrome, onClose: { showingPhrases = false })
+        }
         .sheet(item: $formsCard) { card in
             WordFormsSheet(
                 word: store.displayLabel(for: card),
@@ -343,6 +347,17 @@ struct ContentView: View {
                 title
                 Spacer(minLength: 4)
                 if !mode.isEditing {
+                    Button {
+                        showingPhrases = true
+                    } label: {
+                        Image(systemName: "text.bubble.fill")
+                            .font(.system(size: chrome.isCompact ? 16 : 20, weight: .bold))
+                            .foregroundStyle(Theme.cream)
+                            .frame(minWidth: chrome.isCompact ? 44 : 52, minHeight: chrome.isCompact ? 44 : 52)
+                            .background(RoundedRectangle(cornerRadius: 12).stroke(Theme.cream.opacity(0.35), lineWidth: 2))
+                    }
+                    .accessibilityLabel("Phrases")
+                    .accessibilityIdentifier("openPhrases")
                     Button {
                         showingKeyboard = true
                     } label: {
@@ -1739,6 +1754,11 @@ struct ContentView: View {
             grid.resetToSizeClassDefaults(isCompact: horizontalSizeClass == .compact)
             store.goHome()
         }
+        // Test hook: start the Phrases page from the starters.
+        if args.contains("-ResetPhrases") {
+            for phrase in store.quickPhrases.phrases { store.deleteQuickPhrase(phrase) }
+            for phrase in QuickPhrases.starters.phrases.reversed() { store.saveQuickPhrase(phrase) }
+        }
         if let idx = args.firstIndex(of: "-RestoreBackup"), args.indices.contains(idx + 1),
            let data = try? Data(contentsOf: URL(fileURLWithPath: args[idx + 1])) {
             do {
@@ -2110,9 +2130,9 @@ struct StripChipView: View {
     var body: some View {
         VStack(spacing: 0) {
             Group {
-                if card.slug.hasPrefix(CardStore.typedSlugPrefix) {
-                    // A typed word with no button of its own.
-                    Image(systemName: "keyboard")
+                if CardStore.isTextChip(card.slug) {
+                    // A typed word or saved phrase with no button of its own.
+                    Image(systemName: card.slug.hasPrefix(CardStore.phraseSlugPrefix) ? "text.bubble.fill" : "keyboard")
                         .font(.system(size: 22, weight: .bold))
                         .foregroundStyle(Theme.muted)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)

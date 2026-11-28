@@ -413,6 +413,25 @@ final class AssetCache: Sendable {
         root.appendingPathComponent("keyboard-\(profile.fileKey).json")
     }
 
+    func saveQuickPhrases(_ phrases: QuickPhrases, for profile: KidProfile) {
+        do {
+            let data = try JSONEncoder().encode(phrases)
+            try data.write(to: quickPhrasesFileURL(for: profile), options: .atomic)
+        } catch {
+            print("BestWishes: failed to persist phrases: \(error)")
+        }
+    }
+
+    /// Saved phrases, or the starters when this profile never saved any.
+    func loadQuickPhrases(for profile: KidProfile) -> QuickPhrases {
+        guard let data = try? Data(contentsOf: quickPhrasesFileURL(for: profile)) else { return .starters }
+        return (try? JSONDecoder().decode(QuickPhrases.self, from: data)) ?? .starters
+    }
+
+    func quickPhrasesFileURL(for profile: KidProfile) -> URL {
+        root.appendingPathComponent("phrases-\(profile.fileKey).json")
+    }
+
     func recentsFileURL(for profile: KidProfile) -> URL {
         root.appendingPathComponent("recents-\(profile.fileKey).json")
     }

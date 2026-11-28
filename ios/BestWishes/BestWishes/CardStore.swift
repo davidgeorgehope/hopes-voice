@@ -38,6 +38,8 @@ final class CardStore {
     @ObservationIgnored var onInteraction: (() -> Void)?
     var imageRevision: [String: Int] = [:]
     var strip = SentenceStrip()
+    /// Saved sentences for the active profile (Phrases page).
+    var quickPhrases = QuickPhrases.starters
     /// Caregiver search text. Filter is a view over `currentItems`; not persisted.
     var searchQuery: String = ""
     /// Active kid overlay. Board cards and PECS/MP3 cache are shared.
@@ -182,6 +184,7 @@ final class CardStore {
         messageBar = cache.loadMessageBarSettings(for: profile)
         settings = cache.loadProfileSettings(for: profile)
         recentSlugs = Self.sanitizedRecents(cache.loadRecents(for: profile))
+        quickPhrases = cache.loadQuickPhrases(for: profile)
         folderPath = clampedFolderPath(cache.loadFolderPath(for: profile))
         loadImportedBoardIfPresent()
         if hasImportedBoard {
@@ -228,6 +231,7 @@ final class CardStore {
         messageBar = hasImportedBoard ? settings.messageBar : cache.loadMessageBarSettings(for: activeProfile)
         applyVoiceSettings()
         recentSlugs = Self.sanitizedRecents(cache.loadRecents(for: activeProfile))
+        quickPhrases = cache.loadQuickPhrases(for: activeProfile)
         strip.clear()
         banner = "Restored the backup from \(backup.createdAt.formatted(date: .abbreviated, time: .shortened))."
         return backup
@@ -248,6 +252,7 @@ final class CardStore {
         messageBar = cache.loadMessageBarSettings(for: profile)
         settings = cache.loadProfileSettings(for: profile)
         recentSlugs = Self.sanitizedRecents(cache.loadRecents(for: profile))
+        quickPhrases = cache.loadQuickPhrases(for: profile)
         folderPath = clampedFolderPath(cache.loadFolderPath(for: profile))
         loadImportedBoardIfPresent()
         if hasImportedBoard {
@@ -455,6 +460,43 @@ final class CardStore {
     /// Message-bar chips for typed words use this slug prefix. They have no picture or
     /// recording, are spoken with the device voice, and are kept out of Recents.
     static let typedSlugPrefix = "typed:"
+    static let phraseSlugPrefix = "phrase:"
+
+    /// Message-bar chips that are text only (typed words, saved phrases): no button, no recording.
+    static func isTextChip(_ slug: String) -> Bool {
+        slug.hasPrefix(typedSlugPrefix) || slug.hasPrefix(phraseSlugPrefix)
+    }
+
+    /// Phrases page: say a saved sentence right away.
+    func speakPhrase(_ phrase: String) {
+        onInteraction?()
+        player.speakText(phrase)
+    }
+
+    /// Phrases page: put the whole sentence on the message bar as one chip.
+    func addPhraseToMessageBar(_ phrase: String) {
+        onInteraction?()
+        strip.append(Card(word: "", slug: Self.phraseSlugPrefix + phrase.lowercased(), imageURL: "", audioURL: ""), text: phrase)
+    }
+
+    /// The message bar as one sentence, as Speak would say it.
+    var messageBarText: String {
+        QuickPhrases.clean(strip.chips.map { $0.text ?? speakText(for: $0.card) }.joined(separator: " "))
+    }
+
+    @discardableResult
+    func saveQuickPhrase(_ text: String) -> Bool {
+        var phrases = quickPhrases
+        guard phrases.add(text) else { return false }
+        quickPhrases = phrases
+        cache.saveQuickPhrases(phrases, for: activeProfile)
+        return true
+    }
+
+    func deleteQuickPhrase(_ phrase: String) {
+        quickPhrases.remove(phrase)
+        cache.saveQuickPhrases(quickPhrases, for: activeProfile)
+    }
 
     func keyboardPredictor() -> WordPredictor {
         WordPredictor(
@@ -710,7 +752,7 @@ final class CardStore {
         lastSpokenSlug = strip.cards.first?.slug
         let texts = strip.chips.map { $0.text ?? speakText(for: $0.card) }
         player.speakSequence(strip.cards, spokenTexts: texts, cache: cache, api: api)
-        recordSpoken(slugs: strip.cards.map(\.slug).filter { !$0.hasPrefix(Self.typedSlugPrefix) })
+        recordSpoken(slugs: strip.cards.map(\.slug).filter { !Self.isTextChip($0) })
         if messageBar.clearAfterSpeak {
             clearStrip()
         }
