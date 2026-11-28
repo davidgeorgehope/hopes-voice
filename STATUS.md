@@ -16,6 +16,7 @@ Short note for weekly check-ins. Agents should update this when something ships.
 - Docs: mission and requirements (including the Proloquo2Go-familiar editor workflow), API contract, USB device-run notes, board import format (`bestwishes.board/v1`), contributing guide, store listing copy, and a maintenance-loop skill.
 - Product stack is decided: keep SwiftUI for iPhone + iPad; build Android separately in Kotlin + Jetpack Compose against the same API.
 - GitHub Actions CI runs on `main` for [backend](https://github.com/davidgeorgehope/hopes-voice/actions/workflows/backend.yml) (`pytest`, xAI mocked) and [ios](https://github.com/davidgeorgehope/hopes-voice/actions/workflows/ios.yml) (Xcode, iPad (A16) simulator, `CODE_SIGNING_ALLOWED=NO`). Badges are on the README. The Xcode project, target, and scheme remain `BestWishes` so CI and the Mac mini auto-push script stay wired.
+- Fix for [#28](https://github.com/davidgeorgehope/hopes-voice/issues/28): the toolbar Edit lock now uses SwiftUI's own long press (the same path as the title long-press), shows press feedback, fires a haptic when the hold completes, and enters Edit immediately. The two-finger hold stays on a UIKit recognizer that hands off to the main queue. A new `BestWishesUITests` target holds XCUITests for hold → Done, repeat holds, short tap, and a screenshot check that the screen really changes with no navigation in between.
 
 ## What's next
 

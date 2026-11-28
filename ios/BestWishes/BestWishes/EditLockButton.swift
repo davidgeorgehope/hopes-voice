@@ -27,25 +27,39 @@ struct EditLockButton: View {
         }
     }
 
+    @State private var isPressing = false
+
+    /// One finger: SwiftUI's own long-press, which commits the state change in the same
+    /// SwiftUI transaction as the gesture, exactly like the title long-press. Two fingers: UIKit
+    /// recognizer (SwiftUI has no multi-touch long press) that hops back onto the main actor.
     private var kidProofControl: some View {
         // No on-screen hint text in kid mode; the control stays low-contrast and hold-to-unlock.
         label(title: "Edit", systemImage: "lock.fill", emphasized: false, faded: true)
+            .scaleEffect(isPressing ? 0.94 : 1)
+            .opacity(isPressing ? 0.8 : 1)
+            .animation(.easeOut(duration: 0.15), value: isPressing)
             .overlay {
-                UnlockHoldRecognizer(
-                    oneFingerDuration: CaregiverMode.unlockHoldDuration,
-                    twoFingerDuration: 1.0
-                ) {
-                    mode.unlockAndEdit()
-                }
+                TwoFingerHoldRecognizer(duration: 1.0, onHold: unlock)
             }
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .onLongPressGesture(
+                minimumDuration: CaregiverMode.unlockHoldDuration,
+                maximumDistance: 24,
+                perform: unlock,
+                onPressingChanged: { isPressing = $0 }
+            )
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Edit")
             .accessibilityHint("Hold for one and a half seconds, or hold with two fingers, to edit the board")
             .accessibilityIdentifier("editLock")
             .accessibilityAddTraits(.isButton)
-            .accessibilityAction(named: "Unlock editing") {
-                mode.unlockAndEdit()
-            }
+            .accessibilityAction(named: "Unlock editing", unlock)
+    }
+
+    private func unlock() {
+        isPressing = false
+        mode.unlockAndEdit()
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
     }
 
     private func label(
@@ -80,55 +94,47 @@ struct EditLockButton: View {
     }
 }
 
-/// UIKit recognizers so a one-finger 1.5s hold and a two-finger hold both unlock Edit.
-private struct UnlockHoldRecognizer: UIViewRepresentable {
-    var oneFingerDuration: TimeInterval
-    var twoFingerDuration: TimeInterval
-    var onUnlock: () -> Void
+/// Two-finger hold. SwiftUI has no multi-touch long press, so this is a UIKit recognizer.
+/// It never intercepts the one-finger SwiftUI long press (it requires two touches) and it
+/// changes state only through `onHold`, dispatched asynchronously onto the main queue so the
+/// SwiftUI update is never made from inside UIKit's gesture delivery.
+private struct TwoFingerHoldRecognizer: UIViewRepresentable {
+    var duration: TimeInterval
+    var onHold: () -> Void
 
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
         view.backgroundColor = .clear
-        context.coordinator.install(on: view)
+        view.isUserInteractionEnabled = true
+        let recognizer = UILongPressGestureRecognizer(
+            target: context.coordinator, action: #selector(Coordinator.fired(_:))
+        )
+        recognizer.numberOfTouchesRequired = 2
+        recognizer.minimumPressDuration = duration
+        recognizer.cancelsTouchesInView = false
+        recognizer.delegate = context.coordinator
+        view.addGestureRecognizer(recognizer)
         return view
     }
 
     func updateUIView(_ uiView: UIView, context: Context) {
-        context.coordinator.onUnlock = onUnlock
-        context.coordinator.oneFinger.minimumPressDuration = oneFingerDuration
-        context.coordinator.twoFinger.minimumPressDuration = twoFingerDuration
+        context.coordinator.onHold = onHold
     }
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(oneFingerDuration: oneFingerDuration, twoFingerDuration: twoFingerDuration, onUnlock: onUnlock)
-    }
+    func makeCoordinator() -> Coordinator { Coordinator(onHold: onHold) }
 
-    final class Coordinator: NSObject {
-        var onUnlock: () -> Void
-        let oneFinger: UILongPressGestureRecognizer
-        let twoFinger: UILongPressGestureRecognizer
-
-        init(oneFingerDuration: TimeInterval, twoFingerDuration: TimeInterval, onUnlock: @escaping () -> Void) {
-            self.onUnlock = onUnlock
-            oneFinger = UILongPressGestureRecognizer()
-            oneFinger.minimumPressDuration = oneFingerDuration
-            oneFinger.numberOfTouchesRequired = 1
-            twoFinger = UILongPressGestureRecognizer()
-            twoFinger.minimumPressDuration = twoFingerDuration
-            twoFinger.numberOfTouchesRequired = 2
-            super.init()
-            oneFinger.addTarget(self, action: #selector(fired(_:)))
-            twoFinger.addTarget(self, action: #selector(fired(_:)))
-        }
-
-        func install(on view: UIView) {
-            view.addGestureRecognizer(oneFinger)
-            view.addGestureRecognizer(twoFinger)
-        }
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var onHold: () -> Void
+        init(onHold: @escaping () -> Void) { self.onHold = onHold }
 
         @objc func fired(_ recognizer: UILongPressGestureRecognizer) {
             guard recognizer.state == .began else { return }
-            onUnlock()
+            DispatchQueue.main.async { [weak self] in self?.onHold() }
         }
+
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
+        ) -> Bool { true }
     }
 }
