@@ -1593,6 +1593,7 @@ struct ContentView: View {
         profiles.applyLaunchArguments(args, overlay: store, grid: grid)
         grid.applyLaunchArguments(args)
         applySyncDemoEdits(args)
+        if args.contains("-OpenSettings") { showingSettings = true }
         if let idx = args.firstIndex(of: "-ImportBoard"), args.indices.contains(idx + 1) {
             let path = args[idx + 1]
             Task { @MainActor in

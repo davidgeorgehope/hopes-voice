@@ -14,7 +14,10 @@ struct BestWishesApp: App {
         )
         _profiles = State(initialValue: profiles)
         _store = State(initialValue: store)
-        _sync = State(initialValue: SyncCoordinator(store: store))
+        let sync = SyncCoordinator(store: store)
+        _sync = State(initialValue: sync)
+        // Start with the process, not with the first view, so a slow first draw cannot delay sync.
+        sync.start()
     }
 
     var body: some Scene {
