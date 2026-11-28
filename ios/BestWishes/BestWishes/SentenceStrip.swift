@@ -4,10 +4,13 @@ import Foundation
 struct SentenceChip: Identifiable, Equatable, Sendable {
     let id: UUID
     let card: Card
+    /// A word form picked on long-press ("cats", "went"). Nil means the button's own word.
+    let text: String?
 
-    init(card: Card, id: UUID = UUID()) {
+    init(card: Card, text: String? = nil, id: UUID = UUID()) {
         self.id = id
         self.card = card
+        self.text = text
     }
 }
 
@@ -19,8 +22,8 @@ struct SentenceStrip: Equatable, Sendable {
     var slugs: [String] { chips.map(\.card.slug) }
     var isEmpty: Bool { chips.isEmpty }
 
-    mutating func append(_ card: Card) {
-        chips.append(SentenceChip(card: card))
+    mutating func append(_ card: Card, text: String? = nil) {
+        chips.append(SentenceChip(card: card, text: text))
     }
 
     mutating func backspace() {

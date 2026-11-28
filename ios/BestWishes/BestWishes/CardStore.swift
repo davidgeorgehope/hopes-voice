@@ -391,6 +391,30 @@ final class CardStore {
         recordSpoken(slugs: [card.slug])
     }
 
+    /// Long-press word forms: put this form of the word on the message bar and say it.
+    /// The chip keeps the button's picture; the form is spoken with the device voice.
+    func tapForm(_ card: Card, form: String) {
+        onInteraction?()
+        let base = displayLabel(for: card)
+        let text = form == base ? nil : form
+        strip.append(card, text: text)
+        if messageBar.speakOnTap {
+            lastSpokenSlug = card.slug
+            player.speak(card: card, spokenText: text ?? speakText(for: card), cache: cache, api: api)
+        }
+        recordSpoken(slugs: [card.slug])
+    }
+
+    /// What a message-bar chip shows.
+    func chipLabel(_ chip: SentenceChip) -> String {
+        chip.text ?? displayLabel(for: chip.card)
+    }
+
+    /// Forms offered on long-press for a word button (the word itself first).
+    func wordForms(for card: Card) -> [String] {
+        WordForms.forms(for: displayLabel(for: card), as: wordClass(for: card))
+    }
+
     /// Same path a grid word cell uses. Core-row buttons call this.
     func tapCore(_ card: Card) {
         onInteraction?()
@@ -604,7 +628,7 @@ final class CardStore {
         onInteraction?()
         guard !strip.isEmpty else { return }
         lastSpokenSlug = strip.cards.first?.slug
-        let texts = strip.cards.map { speakText(for: $0) }
+        let texts = strip.chips.map { $0.text ?? speakText(for: $0.card) }
         player.speakSequence(strip.cards, spokenTexts: texts, cache: cache, api: api)
         recordSpoken(slugs: strip.cards.map(\.slug))
         if messageBar.clearAfterSpeak {
