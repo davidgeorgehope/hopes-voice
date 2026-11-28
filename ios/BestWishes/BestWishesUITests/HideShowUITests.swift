@@ -16,8 +16,14 @@ final class HideShowUITests: XCTestCase {
         XCTAssertTrue(toggle.waitForExistence(timeout: 10), "editor has no Show switch")
         for _ in 0..<4 where !toggle.isHittable { app.swipeUp() }
         let isOn = (toggle.value as? String) == "1"
-        if isOn != visible { toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap() }
+        if isOn != visible {
+            // Tap the switch itself (right edge); a tap mid-row doesn't flip it on a wide iPad sheet.
+            toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
+        }
+        let flipped = expectation(for: NSPredicate(format: "value == %@", visible ? "1" : "0"), evaluatedWith: toggle)
+        _ = XCTWaiter.wait(for: [flipped], timeout: 3)
         XCTAssertEqual(toggle.value as? String, visible ? "1" : "0")
+        keep(app, visible ? "editor-shown" : "editor-hidden")
         app.buttons["editorSave"].tap()
         XCTAssertFalse(app.switches["editorVisible"].waitForExistence(timeout: 2))
     }
@@ -31,13 +37,16 @@ final class HideShowUITests: XCTestCase {
 
     func testHideThenShowWithoutDeleting() {
         let app = XCUIApplication()
-        // Start from the default board with nothing hidden.
-        app.launchArguments = ["-ClearImportedBoard", "-UnhideSlug", "car", "-EditMode"]
+        // Default board. No -UnhideSlug: it keeps watching for 10 s and would undo the hide.
+        // setVisible works from either starting state.
+        app.launchArguments = ["-ClearImportedBoard", "-EditMode"]
         app.launch()
 
         setVisible(app, "car", false)
         let car = app.descendants(matching: .any)["card-car"]
         XCTAssertTrue(car.waitForExistence(timeout: 5), "hidden button still shows in Edit")
+        let hidden = expectation(for: NSPredicate(format: "value == %@", "Hidden"), evaluatedWith: car)
+        if XCTWaiter.wait(for: [hidden], timeout: 5) != .completed { keep(app, "after-save") }
         XCTAssertEqual(car.value as? String, "Hidden")
         keep(app, "edit-hidden-car")
 
