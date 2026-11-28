@@ -2109,8 +2109,19 @@ struct StripChipView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            PecsImageView(image: image, remoteURL: remoteURL, placeholderSize: 22)
-                .frame(width: chrome.chipWidth, height: chrome.chipImageHeight)
+            Group {
+                if card.slug.hasPrefix(CardStore.typedSlugPrefix) {
+                    // A typed word with no button of its own.
+                    Image(systemName: "keyboard")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(Theme.muted)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Theme.cardFill)
+                } else {
+                    PecsImageView(image: image, remoteURL: remoteURL, placeholderSize: 22)
+                }
+            }
+            .frame(width: chrome.chipWidth, height: chrome.chipImageHeight)
 
             Text(shown)
                 .font(.system(size: chrome.stripLabelSize, weight: .heavy, design: .rounded))

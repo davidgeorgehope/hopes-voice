@@ -479,7 +479,12 @@ final class CardStore {
         guard !words.isEmpty else { return }
         for word in words {
             let shown = WordPredictor.shown(word)
-            strip.append(Card(word: "", slug: Self.typedSlugPrefix + shown.lowercased(), imageURL: "", audioURL: ""), text: shown)
+            // A word that already has a button uses it: same picture, same recorded voice.
+            if let card = cards.first(where: { displayLabel(for: $0).caseInsensitiveCompare(shown) == .orderedSame }) {
+                strip.append(card)
+            } else {
+                strip.append(Card(word: "", slug: Self.typedSlugPrefix + shown.lowercased(), imageURL: "", audioURL: ""), text: shown)
+            }
         }
         learnTyped(text)
     }
