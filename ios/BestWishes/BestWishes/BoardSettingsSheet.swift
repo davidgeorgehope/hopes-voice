@@ -34,6 +34,13 @@ struct BoardSettingsSheet: View {
                     }
                     Stepper("Visible rows: \(draft.viewportRows)", value: $draft.viewportRows, in: 2...12)
                     Stepper("Visible columns: \(draft.viewportCols)", value: $draft.viewportCols, in: 2...8)
+                    if !store.hasImportedBoard {
+                        Toggle("Color by word type", isOn: Binding(
+                            get: { draft.colorScheme == ProfileSettings.fitzgeraldScheme },
+                            set: { draft.colorScheme = $0 ? ProfileSettings.fitzgeraldScheme : "custom" }
+                        ))
+                        .accessibilityIdentifier("settingsWordTypeColors")
+                    }
                     Toggle("Show core words", isOn: $draft.showCoreRow)
                     Toggle("Show recents", isOn: $draft.showRecents)
                 }

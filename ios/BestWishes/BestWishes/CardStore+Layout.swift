@@ -22,13 +22,34 @@ extension CardStore {
     }
 
     func style(for item: BoardItem) -> CellStyle {
-        styleOverlays[item.id]
-            ?? styleOverlays[editorSlug(item.id)]
-            ?? .default
+        if let saved = styleOverlays[item.id] ?? styleOverlays[editorSlug(item.id)] {
+            return saved
+        }
+        if case .word(let card) = item, let fill = wordClassFill(for: card) {
+            return CellStyle(backgroundHex: fill, borderHex: CellStyle.default.borderHex)
+        }
+        return .default
     }
 
     func style(forCard slug: String) -> CellStyle {
-        styleOverlays[slug] ?? .default
+        if let saved = styleOverlays[slug] { return saved }
+        if let card = cards.first(where: { $0.slug == slug }) ?? coreCards.first(where: { $0.slug == slug }),
+           let fill = wordClassFill(for: card) {
+            return CellStyle(backgroundHex: fill, borderHex: CellStyle.default.borderHex)
+        }
+        return .default
+    }
+
+    /// Fitzgerald-key fill for a word on the default board, or nil when the profile does not
+    /// color by word type. Imported boards get their colors once, at import time.
+    func wordClassFill(for card: Card) -> String? {
+        guard !hasImportedBoard, settings.colorScheme == ProfileSettings.fitzgeraldScheme else { return nil }
+        let wordClass = wordClass(for: card)
+        return ProfileSettings.stripHash(settings.colors[wordClass.rawValue]) ?? wordClass.defaultHex
+    }
+
+    func wordClass(for card: Card) -> WordClass {
+        WordClass.guess(for: displayLabel(for: card))
     }
 
     /// Fixed grid for the open board. Hidden items keep their coordinate.
