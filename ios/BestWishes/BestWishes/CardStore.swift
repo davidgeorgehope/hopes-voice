@@ -450,6 +450,46 @@ final class CardStore {
         WordForms.forms(for: displayLabel(for: card), as: wordClass(for: card))
     }
 
+    // MARK: Keyboard page
+
+    /// Message-bar chips for typed words use this slug prefix. They have no picture or
+    /// recording, are spoken with the device voice, and are kept out of Recents.
+    static let typedSlugPrefix = "typed:"
+
+    func keyboardPredictor() -> WordPredictor {
+        WordPredictor(
+            boardWords: cards.map { displayLabel(for: $0) },
+            history: cache.loadKeyboardHistory(for: activeProfile)
+        )
+    }
+
+    /// Speak button on the keyboard page.
+    func speakTyped(_ text: String) {
+        onInteraction?()
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        player.speakText(trimmed)
+        learnTyped(trimmed)
+    }
+
+    /// "Add to bar": each typed word becomes its own message-bar chip.
+    func addTypedToMessageBar(_ text: String) {
+        onInteraction?()
+        let words = text.split(whereSeparator: \.isWhitespace).map(String.init)
+        guard !words.isEmpty else { return }
+        for word in words {
+            let shown = WordPredictor.shown(word)
+            strip.append(Card(word: "", slug: Self.typedSlugPrefix + shown.lowercased(), imageURL: "", audioURL: ""), text: shown)
+        }
+        learnTyped(text)
+    }
+
+    private func learnTyped(_ text: String) {
+        var history = cache.loadKeyboardHistory(for: activeProfile)
+        history.learn(text)
+        cache.saveKeyboardHistory(history, for: activeProfile)
+    }
+
     /// Same path a grid word cell uses. Core-row buttons call this.
     func tapCore(_ card: Card) {
         onInteraction?()
@@ -665,7 +705,7 @@ final class CardStore {
         lastSpokenSlug = strip.cards.first?.slug
         let texts = strip.chips.map { $0.text ?? speakText(for: $0.card) }
         player.speakSequence(strip.cards, spokenTexts: texts, cache: cache, api: api)
-        recordSpoken(slugs: strip.cards.map(\.slug))
+        recordSpoken(slugs: strip.cards.map(\.slug).filter { !$0.hasPrefix(Self.typedSlugPrefix) })
         if messageBar.clearAfterSpeak {
             clearStrip()
         }
