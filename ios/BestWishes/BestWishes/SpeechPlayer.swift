@@ -36,6 +36,38 @@ final class SpeechPlayer: NSObject, AVAudioPlayerDelegate {
     private(set) var lastSpeakAudioURLs: [URL] = []
     /// On-device voice used when spoken text differs from the cached MP3, or when there is no MP3.
     var voiceSettings: BoardImportVoice = .default
+    /// Lives for the whole app, so a synthesizer still talking never calls back into a freed player.
+    private static let utteranceWaits = UtteranceWaits()
+
+    override init() {
+        super.init()
+        synthesizer.delegate = Self.utteranceWaits
+    }
+
+    /// One step of a Speak: a card's recording, or text for the device voice.
+    enum SpeechStep: Equatable {
+        case recording(Card)
+        case utterance(String)
+    }
+
+    /// Neighbouring text chips (typed words, phrases, reworded buttons) become one utterance,
+    /// so a typed sentence sounds like a sentence instead of word, pause, word.
+    static func speechPlan(_ cards: [Card], spokenTexts: [String]?) -> [SpeechStep] {
+        var steps: [SpeechStep] = []
+        for (index, card) in cards.enumerated() {
+            let spoken = spokenTexts.flatMap { $0.indices.contains(index) ? customSpeech(for: card, spokenText: $0[index]) : nil }
+            guard let spoken else {
+                steps.append(.recording(card))
+                continue
+            }
+            if case .utterance(let previous)? = steps.last {
+                steps[steps.count - 1] = .utterance(previous + " " + spoken)
+            } else {
+                steps.append(.utterance(spoken))
+            }
+        }
+        return steps
+    }
 
     func speak(card: Card, spokenText: String? = nil, cache: AssetCache, api: APIClient) {
         prepareSession()
@@ -64,20 +96,20 @@ final class SpeechPlayer: NSObject, AVAudioPlayerDelegate {
             let audio = cache.audioURL(for: card.slug)
             SpeakTrace.log("speak-strip queue [\(index + 1)/\(cards.count)] slug=\(card.slug) word=\(card.word) audio=\(audio.path)")
         }
+        let steps = Self.speechPlan(cards, spokenTexts: spokenTexts)
         Task { @MainActor in
-            for (index, card) in cards.enumerated() {
+            for (index, step) in steps.enumerated() {
                 guard playbackToken == token else { return }
-                let spoken = spokenTexts.flatMap { $0.indices.contains(index) ? Self.customSpeech(for: card, spokenText: $0[index]) : nil }
-                if let spoken {
-                    SpeakTrace.log("speak-strip utterance [\(index + 1)/\(cards.count)] slug=\(card.slug) text=\(spoken)")
-                    speakFallback(spoken)
-                    let wait = max(0.6, Double(spoken.count) * 0.07)
-                    try? await Task.sleep(for: .seconds(wait))
-                    continue
+                switch step {
+                case .utterance(let text):
+                    SpeakTrace.log("speak-strip utterance [\(index + 1)/\(steps.count)] text=\(text)")
+                    // Wait for the voice to actually finish, so the next recording never talks over it.
+                    await speakAndWait(text)
+                case .recording(let card):
+                    let audio = cache.audioURL(for: card.slug)
+                    SpeakTrace.log("speak-strip play [\(index + 1)/\(steps.count)] slug=\(card.slug) word=\(card.word) audio=\(audio.path)")
+                    await playAndWait(card: card, cache: cache, api: api, token: token)
                 }
-                let audio = cache.audioURL(for: card.slug)
-                SpeakTrace.log("speak-strip play [\(index + 1)/\(cards.count)] slug=\(card.slug) word=\(card.word) audio=\(audio.path)")
-                await playAndWait(card: card, cache: cache, api: api, token: token)
             }
             if playbackToken == token {
                 SpeakTrace.log("speak-strip done")
@@ -121,6 +153,8 @@ final class SpeechPlayer: NSObject, AVAudioPlayerDelegate {
         audioQueue.async { [synthesizer] in
             if synthesizer.isSpeaking { synthesizer.stopSpeaking(at: .immediate) }
         }
+        // A stopped sequence must not stay parked on its utterance.
+        Self.utteranceWaits.finishAll()
     }
 
     private func playNow(card: Card, cache: AssetCache, api: APIClient) {
@@ -204,24 +238,41 @@ final class SpeechPlayer: NSObject, AVAudioPlayerDelegate {
             return
         }
 
-        speakFallback(card.word)
-        try? await Task.sleep(for: .milliseconds(600))
+        await speakAndWait(card.word)
+    }
+
+    /// Speak with the device voice and return when it finishes or is stopped. A long timeout
+    /// guards against a synthesizer that never calls back.
+    private func speakAndWait(_ text: String) async {
+        let settings = voiceSettings
+        let waits = Self.utteranceWaits
+        await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in
+            // The utterance is made and spoken on the audio queue, like every other utterance.
+            audioQueue.async { [synthesizer, audioQueue] in
+                let utterance = Self.makeUtterance(text, settings: settings)
+                waits.wait(for: utterance, done: done)
+                synthesizer.speak(utterance)
+                audioQueue.asyncAfter(deadline: .now() + 4.0 + Double(text.count) * 0.2) {
+                    waits.finish(utterance)
+                }
+            }
+        }
     }
 
     private func speakFallback(_ word: String) {
         let settings = voiceSettings
-        audioQueue.async { [self] in
-            let utterance = AVSpeechUtterance(string: word)
-            if let voice = AVSpeechSynthesisVoice(identifier: settings.voiceId) {
-                utterance.voice = voice
-            } else {
-                utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-            }
-            let rate = max(0.1, min(settings.rate, 2.0))
-            utterance.rate = AVSpeechUtteranceDefaultSpeechRate * (0.92 * Float(rate))
-            utterance.pitchMultiplier = Float(max(0.5, min(settings.pitch, 2.0))) * 1.05
-            synthesizer.speak(utterance)
+        audioQueue.async { [synthesizer] in
+            synthesizer.speak(Self.makeUtterance(word, settings: settings))
         }
+    }
+
+    private static func makeUtterance(_ word: String, settings: BoardImportVoice) -> AVSpeechUtterance {
+        let utterance = AVSpeechUtterance(string: word)
+        utterance.voice = AVSpeechSynthesisVoice(identifier: settings.voiceId) ?? AVSpeechSynthesisVoice(language: "en-US")
+        let rate = max(0.1, min(settings.rate, 2.0))
+        utterance.rate = AVSpeechUtteranceDefaultSpeechRate * (0.92 * Float(rate))
+        utterance.pitchMultiplier = Float(max(0.5, min(settings.pitch, 2.0))) * 1.05
+        return utterance
     }
 
     /// Set up the audio session off the main thread. Called at launch, and again by any tap that
@@ -281,5 +332,36 @@ enum SpeakTrace {
                 try? data.write(to: url, options: .atomic)
             }
         }
+    }
+}
+
+/// Continuations waiting for an utterance to finish, keyed by the utterance. Each resumes once.
+private final class UtteranceWaits: NSObject, AVSpeechSynthesizerDelegate, @unchecked Sendable {
+    private let lock = NSLock()
+    private var waits: [ObjectIdentifier: CheckedContinuation<Void, Never>] = [:]
+
+    func wait(for utterance: AVSpeechUtterance, done: CheckedContinuation<Void, Never>) {
+        lock.withLock { waits[ObjectIdentifier(utterance)] = done }
+    }
+
+    func finish(_ utterance: AVSpeechUtterance) {
+        let done = lock.withLock { waits.removeValue(forKey: ObjectIdentifier(utterance)) }
+        done?.resume()
+    }
+
+    func finishAll() {
+        let all = lock.withLock { () -> [CheckedContinuation<Void, Never>] in
+            defer { waits = [:] }
+            return Array(waits.values)
+        }
+        all.forEach { $0.resume() }
+    }
+
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        finish(utterance)
+    }
+
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        finish(utterance)
     }
 }
