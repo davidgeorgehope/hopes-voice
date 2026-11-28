@@ -127,3 +127,25 @@ jobs:
           print("+", " ".join(cmd), flush=True)
           sys.exit(subprocess.call(cmd))
           PY
+
+      - name: Show failed assertions and performance numbers
+        if: always()
+        run: |
+          set +e
+          result=$(ls -d ios/DerivedData/Logs/Test/*.xcresult 2>/dev/null | tail -1)
+          [ -n "$result" ] || { echo "no xcresult"; exit 0; }
+          xcrun xcresulttool get test-results tests --path "$result" > /tmp/tests.json
+          python3 - <<'PY'
+          import json
+          def walk(node, trail):
+              name = node.get("name", "")
+              if node.get("nodeType") == "Failure Message":
+                  print("FAILED:", " > ".join(trail), "::", name)
+              for child in node.get("children", []) or []:
+                  walk(child, trail + ([name] if node.get("nodeType") == "Test Case" else []))
+          for n in json.load(open("/tmp/tests.json")).get("testNodes", []):
+              walk(n, [])
+          PY
+          rm -rf /tmp/att && xcrun xcresulttool export attachments --path "$result" --output-path /tmp/att
+          grep -h "^PERF" /tmp/att/* 2>/dev/null | sort
+          exit 0
