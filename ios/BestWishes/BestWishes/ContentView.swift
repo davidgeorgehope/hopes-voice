@@ -880,15 +880,22 @@ struct ContentView: View {
 
     @ViewBuilder
     private var importedBoardGrid: some View {
-        if store.importedPageCount > 1 {
-            pagedBoard
-        } else {
-            filledImportGrid(
-                slots: boardSlots,
-                rowStart: 0,
-                rows: max(store.importedBoardRows ?? viewportRows, 1),
-                cols: max(store.importedBoardCols ?? viewportCols, 1)
-            )
+        // A Grid of flexible cells has no intrinsic height. Take the size the
+        // VStack offers and pass it down so empty rows still fill the page.
+        GeometryReader { geo in
+            Group {
+                if store.importedPageCount > 1 {
+                    pagedBoard
+                } else {
+                    filledImportGrid(
+                        slots: boardSlots,
+                        rowStart: 0,
+                        rows: max(store.importedBoardRows ?? viewportRows, 1),
+                        cols: max(store.importedBoardCols ?? viewportCols, 1)
+                    )
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
         }
     }
 
@@ -903,11 +910,12 @@ struct ContentView: View {
                     rows: rowsPerPage,
                     cols: max(store.importedBoardCols ?? viewportCols, 1)
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .tag(page)
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .automatic))
-        .onChange(of: store.currentFolderName) { _, _ in boardPage = 0 }
+        .onChange(of: store.folderPath) { old, new in if old != new { boardPage = 0 } }
     }
 
     /// Equal-sized cells that fill the board area, including empty rows.
@@ -1547,6 +1555,19 @@ struct ContentView: View {
         }
     }
 
+
+    @MainActor
+    private func applyBoardPageLaunchHook(_ page: Int) async {
+        for _ in 0..<40 {
+            if store.hasImportedBoard, store.importedPageCount > page { break }
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+        boardPage = max(page, 0)
+        // TabView may not exist yet on the first assignment; set it again once the pager is on screen.
+        try? await Task.sleep(for: .milliseconds(800))
+        boardPage = max(page, 0)
+    }
+
     private func consumeLaunchArguments() {
         let args = ProcessInfo.processInfo.arguments
         grid.applySizeClassDefaultsIfNeeded(isCompact: horizontalSizeClass == .compact)
@@ -1565,7 +1586,7 @@ struct ContentView: View {
                 }
                 if let pageIdx = args.firstIndex(of: "-BoardPage"), args.indices.contains(pageIdx + 1),
                    let page = Int(args[pageIdx + 1]) {
-                    boardPage = max(page, 0)
+                    await applyBoardPageLaunchHook(page)
                 }
             }
         } else if let idx = args.firstIndex(of: "-OpenFolder"), args.indices.contains(idx + 1) {
@@ -1574,14 +1595,13 @@ struct ContentView: View {
                 try? await Task.sleep(for: .milliseconds(300))
                 if let pageIdx = args.firstIndex(of: "-BoardPage"), args.indices.contains(pageIdx + 1),
                    let page = Int(args[pageIdx + 1]) {
-                    boardPage = max(page, 0)
+                    await applyBoardPageLaunchHook(page)
                 }
             }
         } else if let pageIdx = args.firstIndex(of: "-BoardPage"), args.indices.contains(pageIdx + 1),
                   let page = Int(args[pageIdx + 1]) {
             Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(500))
-                boardPage = max(page, 0)
+                await applyBoardPageLaunchHook(page)
             }
         }
         if let idx = args.firstIndex(of: "-AddWord"), args.indices.contains(idx + 1) {
