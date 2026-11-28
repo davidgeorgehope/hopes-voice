@@ -413,6 +413,20 @@ final class AssetCache: Sendable {
         root.appendingPathComponent("keyboard-\(profile.fileKey).json")
     }
 
+    func saveHomeLayout(_ layout: HomeLayout, for profile: KidProfile) {
+        try? Data(layout.rawValue.utf8).write(to: homeLayoutFileURL(for: profile), options: .atomic)
+    }
+
+    func loadHomeLayout(for profile: KidProfile) -> HomeLayout {
+        guard let data = try? Data(contentsOf: homeLayoutFileURL(for: profile)),
+              let layout = HomeLayout(rawValue: String(decoding: data, as: UTF8.self)) else { return .myBoard }
+        return layout
+    }
+
+    func homeLayoutFileURL(for profile: KidProfile) -> URL {
+        root.appendingPathComponent("home-layout-\(profile.fileKey).txt")
+    }
+
     func recentsFileURL(for profile: KidProfile) -> URL {
         root.appendingPathComponent("recents-\(profile.fileKey).json")
     }

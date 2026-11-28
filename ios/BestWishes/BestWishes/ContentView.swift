@@ -1807,6 +1807,10 @@ struct ContentView: View {
         if args.contains("-ShowHidden") {
             showingHidden = true
         }
+        if let idx = args.firstIndex(of: "-HomeLayout"), args.indices.contains(idx + 1),
+           let layout = HomeLayout(rawValue: args[idx + 1]) {
+            store.setHomeLayout(layout)
+        }
         if let idx = args.firstIndex(of: "-HideSlug"), args.indices.contains(idx + 1) {
             let slug = args[idx + 1]
             Task { await runHideLaunchHooks(slug: slug) }
@@ -2274,7 +2278,20 @@ struct CardCell: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            PecsImageView(image: image, remoteURL: remoteURL, placeholderSize: 36)
+            Group {
+                if CoreWords.isCoreTile(card), card.imageURL.isEmpty, image == nil {
+                    // Core word with no button of its own yet: show the word itself.
+                    Text(shown)
+                        .font(.system(size: 30, weight: .heavy, design: .rounded))
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.4)
+                        .padding(.horizontal, 6)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    PecsImageView(image: image, remoteURL: remoteURL, placeholderSize: 36)
+                }
+            }
                 .frame(maxWidth: .infinity)
                 .frame(maxHeight: expands ? .infinity : nil)
                 .aspectRatio(expands ? nil as CGFloat? : 1, contentMode: .fit)

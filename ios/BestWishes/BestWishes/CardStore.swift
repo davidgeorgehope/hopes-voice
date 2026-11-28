@@ -38,6 +38,8 @@ final class CardStore {
     @ObservationIgnored var onInteraction: (() -> Void)?
     var imageRevision: [String: Int] = [:]
     var strip = SentenceStrip()
+    /// See `homeLayout`.
+    var storedHomeLayout: HomeLayout = .myBoard
     /// Caregiver search text. Filter is a view over `currentItems`; not persisted.
     var searchQuery: String = ""
     /// Active kid overlay. Board cards and PECS/MP3 cache are shared.
@@ -77,7 +79,31 @@ final class CardStore {
             }
         }
         let parentId = currentFolder?.id
+        if parentId == nil, homeLayout == .coreWords {
+            return coreHomeItems
+        }
         return Self.applyingOrder(membershipItems(parentId: parentId), saved: orderOverlays[Self.orderKey(folderId: parentId)])
+    }
+
+    /// Core-word home: fixed core words (using a matching visible button when there is one),
+    /// then the board's top-level folders.
+    var coreHomeItems: [BoardItem] {
+        let visible = cards.filter { !hiddenSlugs.contains($0.slug) }
+        let folders = grouping.folders(parentId: nil).filter { !hiddenSlugs.contains("folder:\($0.id)") }
+        return CoreWords.items(
+            existing: { word in visible.first { displayLabel(for: $0).caseInsensitiveCompare(word) == .orderedSame } },
+            folders: folders
+        )
+    }
+
+    /// Home screen choice for this profile. Only boards that aren't imported offer it.
+    var homeLayout: HomeLayout {
+        hasImportedBoard ? .myBoard : storedHomeLayout
+    }
+
+    func setHomeLayout(_ layout: HomeLayout) {
+        storedHomeLayout = layout
+        cache.saveHomeLayout(layout, for: activeProfile)
     }
 
     /// `BoardItem.id`s on the open board, in the order the grid shows.
@@ -182,6 +208,7 @@ final class CardStore {
         messageBar = cache.loadMessageBarSettings(for: profile)
         settings = cache.loadProfileSettings(for: profile)
         recentSlugs = Self.sanitizedRecents(cache.loadRecents(for: profile))
+        storedHomeLayout = cache.loadHomeLayout(for: profile)
         folderPath = clampedFolderPath(cache.loadFolderPath(for: profile))
         loadImportedBoardIfPresent()
         if hasImportedBoard {
@@ -248,6 +275,7 @@ final class CardStore {
         messageBar = cache.loadMessageBarSettings(for: profile)
         settings = cache.loadProfileSettings(for: profile)
         recentSlugs = Self.sanitizedRecents(cache.loadRecents(for: profile))
+        storedHomeLayout = cache.loadHomeLayout(for: profile)
         folderPath = clampedFolderPath(cache.loadFolderPath(for: profile))
         loadImportedBoardIfPresent()
         if hasImportedBoard {
