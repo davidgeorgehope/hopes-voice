@@ -47,6 +47,7 @@ final class SyncCoordinator {
     @ObservationIgnored private var loop: Task<Void, Never>?
     @ObservationIgnored private var debounce: Task<Void, Never>?
     @ObservationIgnored private var running = false
+    @ObservationIgnored private var failures = 0
     /// Set by the UI while edit mode, settings, or an editor sheet is open. Updates wait.
     @ObservationIgnored var isBusy = false
 
@@ -94,7 +95,10 @@ final class SyncCoordinator {
             while !Task.isCancelled {
                 guard let self else { return }
                 await self.tick()
-                let deadline = Date().addingTimeInterval(self.pollSeconds)
+                // After a failed pass try again soon (3 s, 6 s, 12 s … up to the poll interval).
+                self.failures = self.status == .idle ? 0 : self.failures + 1
+                let wait = self.failures == 0 ? self.pollSeconds : min(self.pollSeconds, 3 * pow(2, Double(self.failures - 1)))
+                let deadline = Date().addingTimeInterval(wait)
                 while Date() < deadline, !Task.isCancelled {
                     try? await Task.sleep(for: .seconds(1))
                     self.applyIfSafe()
