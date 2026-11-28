@@ -158,8 +158,9 @@ struct PecsImageView: View {
         }
     }
 
+    /// `image` is already trimmed and downsampled by `ThumbnailCache`; drawing it costs nothing.
     private func filled(_ image: UIImage) -> some View {
-        Image(uiImage: PecsImage.fillingSubject(image))
+        Image(uiImage: image)
             .resizable()
             .scaledToFit()
             .padding(2)

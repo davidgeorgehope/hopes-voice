@@ -138,16 +138,23 @@ final class CardStore {
     private let api: APIClient
     let cache: AssetCache
     private let player: SpeechPlayer
+    @ObservationIgnored let thumbnails: ThumbnailCache
+    @ObservationIgnored private var pendingThumbnailSlugs: Set<String> = []
+    @ObservationIgnored private var thumbnailFlushScheduled = false
+    @ObservationIgnored private var pendingBoardETags: [String: String] = [:]
+    @ObservationIgnored private var didRevalidateAssets = false
 
     init(
         api: APIClient = .shared,
         cache: AssetCache = .shared,
         player: SpeechPlayer = .shared,
-        profile: KidProfile = .child1
+        profile: KidProfile = .child1,
+        thumbnails: ThumbnailCache = .shared
     ) {
         self.api = api
         self.cache = cache
         self.player = player
+        self.thumbnails = thumbnails
         self.activeProfile = profile
         grouping = cache.loadGrouping() ?? .empty
         hiddenSlugs = cache.loadHiddenSlugs(for: profile)
@@ -215,6 +222,8 @@ final class CardStore {
             cards = cached
         }
         applyProbeHides()
+        prefetchThumbnails()
+        player.warmUp()
         if hasImportedBoard { return }
         await refresh()
         await ensureCoreVocabulary()
@@ -228,6 +237,7 @@ final class CardStore {
         cache.saveCards(cards)
         cache.saveGrouping(grouping)
         persistFolderPath()
+        prefetchThumbnails()
     }
 
     func refresh() async {
@@ -238,8 +248,15 @@ final class CardStore {
         let previousCards = cards
         let previousGrouping = grouping
         do {
-            let board = try await api.fetchBoard(folderId: folderPath.last)
-            applyBoard(board)
+            // Always already on screen from the cached snapshot. This only asks the server
+            // whether anything changed (If-None-Match); a 304 costs one tiny round trip.
+            let folderId = folderPath.last
+            switch try await fetchBoardIfChanged(folderId: folderId) {
+            case .updated(let board):
+                applyBoard(board)
+            case .unchanged:
+                break
+            }
             applyProbeHides()
             lastBoardFetchSucceeded = true
             if isAtRoot {
@@ -599,20 +616,60 @@ final class CardStore {
         }
     }
 
+    /// Trimmed, downsampled picture for a card, from memory only. `nil` while it is still
+    /// loading in the background; the grid redraws when it lands (see `thumbnailDidLoad`).
     func image(for card: Card) -> UIImage? {
-        cache.loadImage(card.slug)
+        thumbnail(slug: card.slug)
     }
 
     func image(for folder: BoardFolder) -> UIImage? {
-        cache.loadImage(folder.id)
+        thumbnail(slug: folder.id)
     }
 
+    private func thumbnail(slug: String) -> UIImage? {
+        thumbnails.thumbnail(for: cache.imageURL(for: slug)) { [weak self] in
+            Task { @MainActor in self?.thumbnailDidLoad(slug) }
+        }
+    }
+
+    /// Several pictures usually land together. Redraw once per burst, not once per picture.
+    private func thumbnailDidLoad(_ slug: String) {
+        pendingThumbnailSlugs.insert(slug)
+        guard !thumbnailFlushScheduled else { return }
+        thumbnailFlushScheduled = true
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(40))
+            guard let self else { return }
+            self.thumbnailFlushScheduled = false
+            let slugs = self.pendingThumbnailSlugs
+            self.pendingThumbnailSlugs = []
+            var next = self.imageRevision
+            for slug in slugs { next[slug, default: 0] += 1 }
+            self.imageRevision = next
+        }
+    }
+
+    /// Start decoding pictures for the cards on screen and the core row before they are drawn.
+    func prefetchThumbnails(limit: Int = 60) {
+        var slugs: [String] = coreCards.map(\.slug)
+        for item in currentItems.prefix(limit) {
+            switch item {
+            case .word(let card): slugs.append(card.slug)
+            case .folder(let folder): slugs.append(folder.id)
+            }
+        }
+        thumbnails.prefetch(slugs.map { cache.imageURL(for: $0) })
+    }
+
+    /// Remote fallback only while nothing is on disk. With a cached picture the grid waits for
+    /// the background thumbnail instead of starting a network fetch.
     func remoteImageURL(for card: Card) -> URL? {
-        api.absoluteURL(for: card.imageURL)
+        guard !cache.hasImage(card.slug) else { return nil }
+        return api.absoluteURL(for: card.imageURL)
     }
 
     func remoteImageURL(for folder: BoardFolder) -> URL? {
-        guard let path = folder.imageURL, !path.isEmpty else { return nil }
+        guard let path = folder.imageURL, !path.isEmpty, !cache.hasImage(folder.id) else { return nil }
         return api.absoluteURL(for: path)
     }
 
@@ -666,6 +723,7 @@ final class CardStore {
         persistSnapshot()
         persistFolderPath()
         cache.saveBoard(board)
+        cache.saveBoardETag(pendingBoardETags.removeValue(forKey: parentId ?? ""), folderId: parentId)
     }
 
     private func upsert(_ card: Card) {
@@ -816,12 +874,36 @@ final class CardStore {
         imageRevision[slug, default: 0] += 1
     }
 
+    private enum BoardRefresh {
+        case updated(BoardResponse)
+        case unchanged
+    }
+
+    /// Conditional board fetch. The validator is only sent when a snapshot of that folder is on
+    /// disk and the in-memory board is not empty, so a 304 can never leave the screen blank.
+    private func fetchBoardIfChanged(folderId: String?) async throws -> BoardRefresh {
+        var validator: String?
+        if let known = cache.boardETag(folderId: folderId), cache.loadBoard(folderId: folderId) != nil,
+           !(cards.isEmpty && grouping.folders.isEmpty) {
+            validator = known
+        }
+        switch try await api.fetchBoard(folderId: folderId, ifNoneMatch: validator) {
+        case .notModified:
+            return .unchanged
+        case .modified(let board, let etag):
+            // The validator is saved after the board snapshot (applyBoard saves it) so the two never disagree.
+            pendingBoardETags[folderId ?? ""] = etag
+            return .updated(board)
+        }
+    }
+
     private func prefetchChildBoards() async {
         let children = grouping.folders(parentId: nil)
         for folder in children {
             do {
-                let board = try await api.fetchBoard(folderId: folder.id)
-                applyBoard(board)
+                if case .updated(let board) = try await fetchBoardIfChanged(folderId: folder.id) {
+                    applyBoard(board)
+                }
             } catch {
                 // Keep the last cached child snapshot. Root fetch already succeeded.
             }
@@ -829,23 +911,30 @@ final class CardStore {
     }
 
     private func prefetchAssets() async {
-        await withTaskGroup(of: Void.self) { group in
+        // Once per launch, ask the server whether pictures and voices we already have changed.
+        let revalidate = !didRevalidateAssets
+        didRevalidateAssets = true
+        let changed = await withTaskGroup(of: String?.self) { group -> [String] in
             for card in cards {
                 group.addTask { [cache, api] in
-                    await cache.ensureAssets(for: card, api: api)
+                    await cache.ensureAssets(for: card, api: api, revalidate: revalidate) ? card.slug : nil
                 }
             }
             for folder in grouping.folders {
                 group.addTask { [cache, api] in
-                    await cache.ensureAssets(for: folder, api: api)
+                    await cache.ensureAssets(for: folder, api: api, revalidate: revalidate) ? folder.id : nil
                 }
             }
+            var slugs: [String] = []
+            for await slug in group {
+                if let slug { slugs.append(slug) }
+            }
+            return slugs
         }
-        for card in cards where cache.hasImage(card.slug) {
-            bumpImage(card.slug)
-        }
-        for folder in grouping.folders where cache.hasImage(folder.id) {
-            bumpImage(folder.id)
-        }
+        // Redraw only the pictures that actually changed, in one update.
+        guard !changed.isEmpty else { return }
+        var next = imageRevision
+        for slug in changed { next[slug, default: 0] += 1 }
+        imageRevision = next
     }
 }

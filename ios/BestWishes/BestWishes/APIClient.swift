@@ -72,8 +72,27 @@ struct APIClient: Sendable {
         return String(data: data, encoding: .utf8)?.contains("true") == true
     }
 
+    /// Result of a conditional board GET.
+    enum BoardFetch: Sendable {
+        /// 200: the board changed (or no validator was sent). `etag` is the validator to send next time.
+        case modified(BoardResponse, etag: String?)
+        /// 304: the cached copy is still current. No body was transferred.
+        case notModified
+    }
+
     /// CONTRACT v0.2.0 board. `folderId` nil is the root; otherwise `GET /v1/board?folder_id=`.
     func fetchBoard(folderId: String? = nil) async throws -> BoardResponse {
+        switch try await fetchBoard(folderId: folderId, ifNoneMatch: nil) {
+        case .modified(let board, _):
+            return board
+        case .notModified:
+            // Unreachable without a validator, but a server may still answer 304 to `*`.
+            throw APIError.http(304, "")
+        }
+    }
+
+    /// Same GET, but sends `If-None-Match` so an unchanged board costs one tiny 304.
+    func fetchBoard(folderId: String?, ifNoneMatch etag: String?) async throws -> BoardFetch {
         guard var components = URLComponents(url: baseURL.appending(path: "v1/board"), resolvingAgainstBaseURL: false) else {
             throw APIError.badURL
         }
@@ -81,10 +100,19 @@ struct APIClient: Sendable {
             components.queryItems = [URLQueryItem(name: "folder_id", value: folderId)]
         }
         guard let url = components.url else { throw APIError.badURL }
-        let (data, response) = try await data(for: getRequest(url))
+        var request = getRequest(url)
+        if let etag, !etag.isEmpty {
+            request.setValue(etag, forHTTPHeaderField: "If-None-Match")
+        }
+        let (data, response) = try await data(for: request)
+        if (response as? HTTPURLResponse)?.statusCode == 304 {
+            return .notModified
+        }
         try throwIfNeeded(response, data: data)
         do {
-            return try JSONDecoder().decode(BoardResponse.self, from: data)
+            let board = try JSONDecoder().decode(BoardResponse.self, from: data)
+            let validator = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "ETag")
+            return .modified(board, etag: validator)
         } catch let error as APIError {
             throw error
         } catch {
@@ -168,11 +196,38 @@ struct APIClient: Sendable {
         return components.url
     }
 
+    /// Result of a (possibly conditional) file download.
+    enum DownloadOutcome: Sendable, Equatable {
+        /// The file was written. `etag` is the validator to keep next to it.
+        case downloaded(etag: String?)
+        /// 304: the file on disk is still current.
+        case notModified
+    }
+
     func download(_ remote: URL, to local: URL) async throws {
+        _ = try await download(remote, to: local, ifNoneMatch: nil, ifModifiedSince: nil)
+    }
+
+    /// Download `remote` to `local`. With a validator the server may answer 304 and nothing is written.
+    @discardableResult
+    func download(
+        _ remote: URL,
+        to local: URL,
+        ifNoneMatch etag: String?,
+        ifModifiedSince modified: Date?
+    ) async throws -> DownloadOutcome {
         var request = URLRequest(url: remote)
         request.timeoutInterval = Self.getTimeout
         request.cachePolicy = .reloadIgnoringLocalCacheData
+        if let etag, !etag.isEmpty {
+            request.setValue(etag, forHTTPHeaderField: "If-None-Match")
+        } else if let modified {
+            request.setValue(Self.httpDate(modified), forHTTPHeaderField: "If-Modified-Since")
+        }
         let (temp, response) = try await session.download(for: request)
+        if (response as? HTTPURLResponse)?.statusCode == 304 {
+            return .notModified
+        }
         try throwIfNeeded(response, data: Data())
         try FileManager.default.createDirectory(at: local.deletingLastPathComponent(), withIntermediateDirectories: true)
         // Replace, don't delete-then-move: a failed GET must not wipe a warm cache file.
@@ -181,6 +236,15 @@ struct APIClient: Sendable {
         } else {
             try FileManager.default.moveItem(at: temp, to: local)
         }
+        return .downloaded(etag: (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "ETag"))
+    }
+
+    static func httpDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "GMT")
+        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
+        return formatter.string(from: date)
     }
 
     private func getRequest(_ url: URL) -> URLRequest {
