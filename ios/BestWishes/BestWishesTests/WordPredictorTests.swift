@@ -49,9 +49,10 @@ final class WordPredictorTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: root) }
         let cache = AssetCache(root: root)
         let store = CardStore(api: APIClient(baseURL: APIClient.unreachableBaseURL), cache: cache, player: SpeechPlayer())
+        store.seedLocalBoard(cards: [Card(word: "want", slug: "want", imageURL: "", audioURL: "")], folders: [])
         store.addTypedToMessageBar("i want pancakes ")
         XCTAssertEqual(store.strip.chips.map { store.chipLabel($0) }, ["I", "want", "pancakes"])
-        XCTAssertTrue(store.strip.slugs.allSatisfy { $0.hasPrefix(CardStore.typedSlugPrefix) })
+        XCTAssertEqual(store.strip.slugs, ["typed:i", "want", "typed:pancakes"], "a typed word that has a button uses that button")
         XCTAssertEqual(store.keyboardPredictor().suggestions(for: "pa").first, "pancakes", "learned for next time")
         XCTAssertEqual(store.keyboardPredictor().suggestions(for: "want ").first, "pancakes")
     }
