@@ -77,6 +77,31 @@ struct BoardChrome: Equatable {
         return max(fitted, minimum)
     }
 
+    /// Flattest a default-board button may get (height ÷ width) before we show fewer rows.
+    static let minimumCellAspect: CGFloat = 0.62
+
+    /// Default-board cell height on iPad. Fit `rows` rows to the height, but if that makes
+    /// buttons flatter than `minimumCellAspect` (landscape, or many rows), show fewer whole
+    /// rows on screen and let the rest scroll. Depends only on the screen and the Rows
+    /// setting, never on how many buttons a folder has, so cells keep one size everywhere.
+    static func shapedCellHeight(
+        available: CGFloat,
+        rows: Int,
+        cellWidth: CGFloat,
+        verticalPadding: CGFloat,
+        spacing: CGFloat,
+        minimum: CGFloat
+    ) -> CGFloat {
+        let fitted = fittedCellHeight(available: available, rows: rows, verticalPadding: verticalPadding, spacing: spacing, minimum: minimum)
+        let flattest = (cellWidth * minimumCellAspect).rounded(.down)
+        guard fitted < flattest else { return fitted }
+        let inner = available - verticalPadding * 2
+        let rowsThatFit = Int(((inner + spacing) / (flattest + spacing)).rounded(.down))
+        guard rowsThatFit >= 1 else { return max(flattest, minimum) }
+        let refit = fittedCellHeight(available: available, rows: min(rowsThatFit, max(rows, 1)), verticalPadding: verticalPadding, spacing: spacing, minimum: minimum)
+        return max(refit, flattest)
+    }
+
     var chipHeight: CGFloat { chipImageHeight + chipLabelHeight }
 
     var gridItems: [GridItem] {
@@ -106,10 +131,14 @@ struct BoardChrome: Equatable {
     static func make(
         horizontalSizeClass: UserInterfaceSizeClass?,
         availableWidth: CGFloat,
-        columnCount: Int
+        columnCount: Int,
+        availableHeight: CGFloat = 1_000
     ) -> BoardChrome {
         let width = max(availableWidth, 1)
         let compact = horizontalSizeClass == .compact || width < 600
+        // A short iPad screen (iPad mini in landscape) gets a slimmer message bar and core
+        // row so the board keeps most of the height. Widths stay iPad-sized.
+        let short = !compact && availableHeight < 900
         let columns = max(columnCount, 1)
 
         let gridPadding: CGFloat = compact ? 10 : 24
@@ -120,20 +149,20 @@ struct BoardChrome: Equatable {
         let stripSpacing: CGFloat = compact ? 6 : 14
         let speakWidth: CGFloat = compact ? 64 : 108
         let sideButtonWidth: CGFloat = compact ? 48 : 88
-        let stripHeight: CGFloat = compact ? 72 : 116
+        let stripHeight: CGFloat = compact ? 72 : (short ? 84 : 116)
         let reserved = stripPadding * 2 + speakWidth + sideButtonWidth * 2 + stripSpacing * 3
         let leftover = max(width - reserved, 0)
         let minimumChipWellWidth = max(leftover, compact ? 140 : 180)
         let chipWidth: CGFloat = compact ? 56 : 100
-        let chipImageHeight: CGFloat = compact ? 48 : 76
-        let chipLabelHeight: CGFloat = compact ? 24 : 32
+        let chipImageHeight: CGFloat = compact ? 48 : (short ? 46 : 76)
+        let chipLabelHeight: CGFloat = compact ? 24 : (short ? 24 : 32)
 
         let corePadding: CGFloat = compact ? 10 : 20
         let coreSpacing: CGFloat = compact ? 6 : 10
         let coreInner = width - corePadding * 2 - coreSpacing * 5
         let coreCellWidth = max((coreInner / 6).rounded(.down), 36)
-        let coreImageHeight: CGFloat = compact ? 48 : 92
-        let coreLabelHeight: CGFloat = compact ? 28 : 44
+        let coreImageHeight: CGFloat = compact ? 48 : (short ? 52 : 92)
+        let coreLabelHeight: CGFloat = compact ? 28 : (short ? 32 : 44)
 
         return BoardChrome(
             isCompact: compact,
@@ -143,7 +172,7 @@ struct BoardChrome: Equatable {
             gridPadding: gridPadding,
             stripSpacing: stripSpacing,
             stripPadding: stripPadding,
-            stripVerticalPadding: compact ? 8 : 12,
+            stripVerticalPadding: compact || short ? 8 : 12,
             stripHeight: stripHeight,
             stripIconSize: compact ? 18 : 28,
             stripLabelSize: compact ? 12 : 18,
