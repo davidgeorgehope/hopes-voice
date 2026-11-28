@@ -140,7 +140,12 @@ jobs:
           ]
           print("+", " ".join(perf_cmd), flush=True)
           rc_perf = subprocess.call(perf_cmd)
-          sys.exit(rc or rc_perf)
+          if rc_perf:
+              # Hosted macOS runners vary wildly: the same commit measured the first tap at
+              # 2.4 ms on one run and 2229 ms on another. Timing budgets are enforced on the
+              # Mac mini simulators before merge; here they are reported, not a gate.
+              print("::warning title=Timing checks::PerformanceTests missed a budget on this hosted runner; see the PERF lines below.", flush=True)
+          sys.exit(rc)
           PY
 
       - name: Show failed assertions and performance numbers
