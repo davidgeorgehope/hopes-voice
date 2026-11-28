@@ -394,6 +394,25 @@ final class AssetCache: Sendable {
         return CardStore.sanitizedRecents((try? JSONDecoder().decode([String].self, from: data)) ?? [])
     }
 
+    /// Words typed on the keyboard page, for prediction. Per profile, on this device only.
+    func saveKeyboardHistory(_ history: KeyboardHistory, for profile: KidProfile) {
+        do {
+            let data = try JSONEncoder().encode(history)
+            try data.write(to: keyboardHistoryFileURL(for: profile), options: .atomic)
+        } catch {
+            print("BestWishes: failed to persist keyboard history: \(error)")
+        }
+    }
+
+    func loadKeyboardHistory(for profile: KidProfile) -> KeyboardHistory {
+        guard let data = try? Data(contentsOf: keyboardHistoryFileURL(for: profile)) else { return KeyboardHistory() }
+        return (try? JSONDecoder().decode(KeyboardHistory.self, from: data)) ?? KeyboardHistory()
+    }
+
+    func keyboardHistoryFileURL(for profile: KidProfile) -> URL {
+        root.appendingPathComponent("keyboard-\(profile.fileKey).json")
+    }
+
     func recentsFileURL(for profile: KidProfile) -> URL {
         root.appendingPathComponent("recents-\(profile.fileKey).json")
     }

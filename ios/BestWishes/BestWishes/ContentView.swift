@@ -20,6 +20,7 @@ struct ContentView: View {
     @State private var editorDraft: ButtonEditorDraft?
     /// Word whose grammar forms are showing after a long-press.
     @State private var formsCard: Card?
+    @State private var showingKeyboard = false
     @State private var editorBusy = false
     @State private var showingSettings = false
     @State private var showingImporter = false
@@ -239,6 +240,9 @@ struct ContentView: View {
         } message: {
             Text("Only this iPad sees “\(renameDraft.isEmpty ? pendingRenameFallback : renameDraft)”. Speak still uses the original voice.")
         }
+        .fullScreenCover(isPresented: $showingKeyboard) {
+            KeyboardPage(store: store, onClose: { showingKeyboard = false })
+        }
         .sheet(item: $formsCard) { card in
             WordFormsSheet(
                 word: store.displayLabel(for: card),
@@ -338,6 +342,19 @@ struct ContentView: View {
                 folderNav
                 title
                 Spacer(minLength: 4)
+                if !mode.isEditing {
+                    Button {
+                        showingKeyboard = true
+                    } label: {
+                        Image(systemName: "keyboard")
+                            .font(.system(size: chrome.isCompact ? 16 : 20, weight: .bold))
+                            .foregroundStyle(Theme.cream)
+                            .frame(minWidth: chrome.isCompact ? 44 : 52, minHeight: chrome.isCompact ? 44 : 52)
+                            .background(RoundedRectangle(cornerRadius: 12).stroke(Theme.cream.opacity(0.35), lineWidth: 2))
+                    }
+                    .accessibilityLabel("Keyboard")
+                    .accessibilityIdentifier("openKeyboard")
+                }
                 if mode.showsAddChrome {
                     Button {
                         showingSettings = true

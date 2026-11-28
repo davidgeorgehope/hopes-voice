@@ -96,6 +96,18 @@ final class SpeechPlayer: NSObject, AVAudioPlayerDelegate {
         return spoken
     }
 
+    /// Say typed text with the device voice (keyboard page).
+    func speakText(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        prepareSession()
+        stop()
+        lastSpeakSequence = []
+        lastSpeakAudioURLs = []
+        SpeakTrace.log("speak typed text=\(trimmed)")
+        speakFallback(trimmed)
+    }
+
     func stop() {
         playbackToken = UUID()
         audioPlayer?.stop()
