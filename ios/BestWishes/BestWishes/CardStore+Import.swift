@@ -166,6 +166,38 @@ extension CardStore {
         cache.clearImportedBoard(for: activeProfile)
         settings = .default
         cache.saveProfileSettings(settings, for: activeProfile)
+        messageBar = settings.messageBar
+        persistMessageBar()
+        applyVoiceSettings()
+        restoreServerBoardAfterImport()
+    }
+
+    /// Importing replaced the cards, folders, and per-cell overlays with the imported board's.
+    /// Put the default (server) board back from its on-device snapshots right away, then ask
+    /// the server for anything newer. Without this the imported buttons stayed on screen
+    /// after "Remove imported board" until the server board happened to change.
+    private func restoreServerBoardAfterImport() {
+        cards = []
+        grouping = .empty
+        folderPath = []
+        positionOverlays = [:]
+        speakOverlays = [:]
+        styleOverlays = [:]
+        labelOverlays = [:]
+        persistPositions()
+        persistSpeak()
+        persistStyles()
+        persistLabels()
+        persistFolderPath()
+        if let root = cache.loadBoard(folderId: nil) {
+            applyBoard(root)
+            for folder in grouping.folders {
+                if let board = cache.loadBoard(folderId: folder.id) {
+                    applyBoard(board)
+                }
+            }
+        }
+        Task { await refresh() }
     }
 
     var hasImportedBoard: Bool { importedDocument != nil }

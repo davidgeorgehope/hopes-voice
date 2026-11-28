@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 /// Caregiver settings for look, voice, message bar, and board import.
 struct BoardSettingsSheet: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Bindable var store: CardStore
     var grid: GridLayout
     var sync: SyncCoordinator?
@@ -108,6 +109,7 @@ struct BoardSettingsSheet: View {
             .alert("Remove the imported board?", isPresented: $confirmClear) {
                 Button("Remove", role: .destructive) {
                     store.clearImportedBoard()
+                    grid.resetToSizeClassDefaults(isCompact: horizontalSizeClass == .compact)
                     confirmClear = false
                     onDismiss()
                 }

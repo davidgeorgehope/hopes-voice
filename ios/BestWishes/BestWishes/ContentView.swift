@@ -28,7 +28,6 @@ struct ContentView: View {
     @State private var voice = VoiceRecognizer()
     @State private var pendingVoiceWord: String?
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.boardCellExpands) private var boardCellExpands
     @State private var viewWidth: CGFloat = Self.initialViewWidth
 
     private static var initialViewWidth: CGFloat {
@@ -57,7 +56,24 @@ struct ContentView: View {
         _grid = State(initialValue: grid ?? GridLayout(profile: profiles.active))
     }
 
+    /// Measure the space the window offers, never the content's own size. Measuring the
+    /// content let one too-wide row (for example the caregiver profile switcher on a phone)
+    /// widen every fixed-width row, which then measured even wider and stuck off-screen.
     var body: some View {
+        GeometryReader { geo in
+            rootStack
+                .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+                .onAppear { updateViewWidth(geo.size.width) }
+                .onChange(of: geo.size.width) { _, width in updateViewWidth(width) }
+        }
+    }
+
+    private func updateViewWidth(_ width: CGFloat) {
+        guard width > 0, abs(width - viewWidth) > 0.5 else { return }
+        viewWidth = width
+    }
+
+    private var rootStack: some View {
         VStack(spacing: 0) {
             topBar
             if let banner = store.banner {
@@ -126,12 +142,6 @@ struct ContentView: View {
         } message: {
             Text(importError ?? "")
         }
-        .background(
-            GeometryReader { geo in
-                Color.clear.preference(key: BoardWidthPreference.self, value: geo.size.width)
-            }
-        )
-        .onPreferenceChange(BoardWidthPreference.self) { viewWidth = $0 }
         .environment(\.boardChrome, chrome)
         .task { await store.bootstrap() }
         .onAppear { consumeLaunchArguments() }
@@ -309,12 +319,22 @@ struct ContentView: View {
                 EditLockButton(mode: mode, isCompact: chrome.isCompact, onLock: lockEditing)
             }
             if mode.showsProfileSwitcher {
-                HStack(spacing: 12) {
-                    profileSwitcher
-                    Spacer(minLength: 8)
-                    caregiverTools
+                if chrome.isCompact {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            profileSwitcher
+                            caregiverTools
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    HStack(spacing: 12) {
+                        profileSwitcher
+                        Spacer(minLength: 8)
+                        caregiverTools
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
             if mode.showsAddChrome {
                 addChrome
@@ -871,18 +891,54 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .environment(\.boardCellExpands, true)
             } else {
-                ScrollView {
-                    LazyVGrid(columns: chrome.gridItems, spacing: chrome.gridSpacing) {
-                        ForEach(boardSlots) { slot in
-                            boardSlotCell(slot)
-                        }
-                    }
-                    .padding(.horizontal, chrome.gridPadding)
-                    .padding(.vertical, chrome.gridPadding + chrome.highlightStroke)
-                }
+                defaultBoardGrid
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .environment(\.boardCellExpands, true)
             }
         }
         .refreshable { await store.refresh() }
+    }
+
+    /// The default board: exactly `columnCount` columns across the width and `rowCount`
+    /// rows filling the height. Extra rows (more buttons than seats) scroll vertically;
+    /// cells never get shorter than `chrome.minimumCellHeight` and never scroll sideways.
+    private var defaultBoardGrid: some View {
+        GeometryReader { geo in
+            let slots = boardSlots
+            let cols = max(store.importedBoardCols ?? grid.columnCount, 1)
+            let totalRows = max((slots.count + cols - 1) / cols, 1)
+            let verticalPadding = chrome.gridPadding + chrome.highlightStroke
+            let cellHeight = BoardChrome.fittedCellHeight(
+                available: geo.size.height,
+                rows: max(grid.rowCount, 1),
+                verticalPadding: verticalPadding,
+                spacing: chrome.gridSpacing,
+                minimum: chrome.minimumCellHeight
+            )
+            ScrollView(.vertical) {
+                Grid(horizontalSpacing: chrome.gridSpacing, verticalSpacing: chrome.gridSpacing) {
+                    ForEach(0..<totalRows, id: \.self) { row in
+                        GridRow {
+                            ForEach(0..<cols, id: \.self) { col in
+                                let index = row * cols + col
+                                Group {
+                                    if index < slots.count {
+                                        boardSlotCell(slots[index])
+                                    } else {
+                                        Color.clear
+                                    }
+                                }
+                                .frame(width: chrome.cellWidth(columns: cols), height: cellHeight)
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, chrome.gridPadding)
+                .padding(.vertical, verticalPadding)
+                .frame(width: geo.size.width)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        }
     }
 
     @ViewBuilder
@@ -936,7 +992,8 @@ struct ContentView: View {
                     ForEach(0..<cols, id: \.self) { col in
                         let coord = GridCoord(row: rowStart + row, col: col)
                         boardSlotCell(lookup[coord] ?? .empty(coord))
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .frame(width: chrome.cellWidth(columns: cols))
+                            .frame(maxHeight: .infinity)
                     }
                 }
             }
@@ -1260,7 +1317,7 @@ struct ContentView: View {
             }
         } label: {
             RoundedRectangle(cornerRadius: chrome.isCompact ? 16 : 22, style: .continuous)
-                .stroke(Theme.ink.opacity(canAdd ? 0.35 : 0.12), style: StrokeStyle(lineWidth: canAdd ? 3 : 1, dash: [8, 6]))
+                .stroke(canAdd ? Theme.ink.opacity(0.35) : Color.clear, style: StrokeStyle(lineWidth: 3, dash: [8, 6]))
                 .background(
                     RoundedRectangle(cornerRadius: chrome.isCompact ? 16 : 22, style: .continuous)
                         .fill(canAdd ? Theme.cream.opacity(0.35) : Color.clear)
@@ -1276,8 +1333,7 @@ struct ContentView: View {
                         .foregroundStyle(Theme.ink.opacity(0.45))
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: boardCellExpands ? .infinity : nil)
-                .aspectRatio(boardCellExpands ? nil as CGFloat? : 0.82, contentMode: .fit)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .buttonStyle(.plain)
         .disabled(!canAdd)
@@ -1315,9 +1371,12 @@ struct ContentView: View {
                 draggingItemID: $draggingItemID,
                 store: store
             ))
+            .accessibilityElement(children: .ignore)
             .accessibilityAddTraits(.isButton)
+            .accessibilityAction { handleBoardTap(item, at: coord) }
             .accessibilityLabel(label)
             .accessibilityHint("Adds this word to the sentence")
+            .accessibilityIdentifier("card-\(card.slug)")
         case .folder(let folder):
             ZStack(alignment: .topTrailing) {
                 FolderCell(
@@ -1338,7 +1397,9 @@ struct ContentView: View {
                 draggingItemID: $draggingItemID,
                 store: store
             ))
+            .accessibilityElement(children: .ignore)
             .accessibilityAddTraits(.isButton)
+            .accessibilityAction { handleBoardTap(item, at: coord) }
             .accessibilityLabel("\(label) folder")
             .accessibilityHint("Opens this folder")
             .accessibilityIdentifier("folder-\(folder.id)")
@@ -1592,6 +1653,12 @@ struct ContentView: View {
         grid.applySizeClassDefaultsIfNeeded(isCompact: horizontalSizeClass == .compact)
         mode.applyLaunchArguments(args)
         profiles.applyLaunchArguments(args, overlay: store, grid: grid)
+        // Test hook: start from the default board's Home (drops a saved import and folder).
+        if args.contains("-ClearImportedBoard") {
+            store.clearImportedBoard()
+            grid.resetToSizeClassDefaults(isCompact: horizontalSizeClass == .compact)
+            store.goHome()
+        }
         grid.applyLaunchArguments(args)
         applySyncDemoEdits(args)
         if args.contains("-OpenSettings") { showingSettings = true }
@@ -2050,11 +2117,14 @@ struct FolderCell: View {
             Text(shown)
                 .font(.system(size: chrome.cellTitleSize, weight: .heavy, design: .rounded))
                 .foregroundStyle(Theme.cream)
-                .lineLimit(2)
-                .minimumScaleFactor(0.6)
+                // One word shrinks to fit instead of breaking mid-word ("chocolat-e").
+                .lineLimit(shown.contains(" ") ? 2 : 1)
+                .minimumScaleFactor(0.5)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, minHeight: chrome.cellLabelMinHeight)
                 .padding(.horizontal, 6)
+                // The label takes only the height it needs; the picture gets the rest.
+                .fixedSize(horizontal: false, vertical: true)
                 .background(Theme.labelWell)
         }
         .frame(maxWidth: .infinity, maxHeight: expands ? .infinity : nil)
@@ -2105,11 +2175,14 @@ struct CardCell: View {
             Text(shown)
                 .font(.system(size: chrome.cellTitleSize, weight: .heavy, design: .rounded))
                 .foregroundStyle(Theme.cream)
-                .lineLimit(2)
-                .minimumScaleFactor(0.6)
+                // One word shrinks to fit instead of breaking mid-word ("chocolat-e").
+                .lineLimit(shown.contains(" ") ? 2 : 1)
+                .minimumScaleFactor(0.5)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, minHeight: chrome.cellLabelMinHeight)
                 .padding(.horizontal, 6)
+                // The label takes only the height it needs; the picture gets the rest.
+                .fixedSize(horizontal: false, vertical: true)
                 .background(Theme.labelWell)
         }
         .frame(maxWidth: .infinity, maxHeight: expands ? .infinity : nil)
