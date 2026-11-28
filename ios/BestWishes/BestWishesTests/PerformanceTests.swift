@@ -200,7 +200,7 @@ final class PerformanceTests: XCTestCase {
             window?.isHidden = true
         }
         report("coldBoardRender500", samples)
-        XCTAssertLessThan(median(samples), Self.coldRenderBudget, "500-card board must reach the screen without decoding pictures on the main thread")
+        XCTAssertLessThan(median(samples), Self.coldRenderBudget, "median \(median(samples) * 1000) ms: 500-card board must reach the screen without decoding pictures on the main thread")
     }
 
     /// How long until the first screenful of pictures is actually drawn from a cold start
@@ -258,7 +258,7 @@ final class PerformanceTests: XCTestCase {
             mainThreadBusyTime {}
         }
         report("tapToFeedback500", samples)
-        XCTAssertLessThan(median(samples), Self.tapBudget, "tap to feedback must stay under 100 ms")
+        XCTAssertLessThan(median(samples), Self.tapBudget, "median \(median(samples) * 1000) ms: tap to feedback must stay under 100 ms")
     }
 
     /// Same tap, but the very first one after launch (audio session, first decode of everything).
@@ -292,6 +292,6 @@ final class PerformanceTests: XCTestCase {
             })
         }
         report("pictureLookup500", samples)
-        XCTAssertLessThan(median(samples), Self.lookupBudget, "picture lookup must be a memory read, not a disk decode")
+        XCTAssertLessThan(median(samples), Self.lookupBudget, "median \(median(samples) * 1000) ms: picture lookup must be a memory read, not a disk decode")
     }
 }
