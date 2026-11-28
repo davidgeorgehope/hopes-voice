@@ -14,6 +14,11 @@ struct BoardSettingsSheet: View {
     @State private var draft: ProfileSettings
     @State private var profileName: String
     @State private var confirmClear = false
+    @State private var backupDocument: BackupFileDocument?
+    @State private var showingBackupExporter = false
+    @State private var showingBackupImporter = false
+    @State private var pendingRestore: Data?
+    @State private var backupMessage: String?
 
     init(
         store: CardStore,
@@ -154,6 +159,22 @@ struct BoardSettingsSheet: View {
                         profileName: profiles?.displayName(for: store.activeProfile) ?? store.activeProfile.displayName
                     )
                 }
+                Section("Backup") {
+                    Button("Save a backup of everything…") {
+                        do {
+                            backupDocument = BackupFileDocument(data: try store.makeBackupData())
+                            showingBackupExporter = true
+                        } catch {
+                            backupMessage = error.localizedDescription
+                        }
+                    }
+                    .accessibilityIdentifier("settingsBackupSave")
+                    Button("Restore from a backup…") { showingBackupImporter = true }
+                        .accessibilityIdentifier("settingsBackupRestore")
+                    Text("One file with both profiles' boards, edits, on-device photos, and settings. Save it to Files or iCloud Drive; restoring replaces what is on this device.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
                 Section("Import") {
                     Button("Import a board file…", action: onImport)
                         .accessibilityIdentifier("importBoard")
@@ -188,6 +209,59 @@ struct BoardSettingsSheet: View {
                     }
                     .accessibilityIdentifier("settingsSave")
                 }
+            }
+            .fileExporter(
+                isPresented: $showingBackupExporter,
+                document: backupDocument,
+                contentType: .json,
+                defaultFilename: VocabularyBackupIO.fileName()
+            ) { result in
+                if case .failure(let error) = result { backupMessage = error.localizedDescription }
+            }
+            .fileImporter(isPresented: $showingBackupImporter, allowedContentTypes: [.json]) { result in
+                switch result {
+                case .success(let url):
+                    let scoped = url.startAccessingSecurityScopedResource()
+                    defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+                    do {
+                        let data = try Data(contentsOf: url)
+                        _ = try VocabularyBackupIO.decode(data)
+                        pendingRestore = data
+                    } catch {
+                        backupMessage = error.localizedDescription
+                    }
+                case .failure(let error):
+                    backupMessage = error.localizedDescription
+                }
+            }
+            .alert("Replace this device's boards with the backup?", isPresented: Binding(
+                get: { pendingRestore != nil },
+                set: { if !$0 { pendingRestore = nil } }
+            )) {
+                Button("Restore", role: .destructive) {
+                    if let data = pendingRestore {
+                        do {
+                            try store.restoreBackup(data)
+                            grid.applyProfile(store.activeProfile)
+                            pendingRestore = nil
+                            onDismiss()
+                        } catch {
+                            pendingRestore = nil
+                            backupMessage = error.localizedDescription
+                        }
+                    }
+                }
+                Button("Cancel", role: .cancel) { pendingRestore = nil }
+            } message: {
+                Text("Both profiles' buttons, edits, photos, and settings are replaced with the ones in the file.")
+            }
+            .alert("Backup", isPresented: Binding(
+                get: { backupMessage != nil },
+                set: { if !$0 { backupMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) { backupMessage = nil }
+            } message: {
+                Text(backupMessage ?? "")
             }
             .alert("Remove the imported board?", isPresented: $confirmClear) {
                 Button("Remove", role: .destructive) {
