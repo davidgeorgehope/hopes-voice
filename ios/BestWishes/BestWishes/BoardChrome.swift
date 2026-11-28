@@ -141,9 +141,10 @@ struct BoardChrome: Equatable {
         let short = !compact && availableHeight < 900
         let columns = max(columnCount, 1)
 
-        let gridPadding: CGFloat = compact ? 10 : 24
-        let gridSpacing: CGFloat = compact ? 8 : 22
-        let highlightStroke: CGFloat = compact ? 5 : 8
+        // iPad gaps stay small so pictures get the room (a thin gutter, like a printed board).
+        let gridPadding: CGFloat = compact ? 10 : 16
+        let gridSpacing: CGFloat = compact ? 8 : 12
+        let highlightStroke: CGFloat = compact ? 5 : 6
 
         let stripPadding: CGFloat = compact ? 10 : 20
         let stripSpacing: CGFloat = compact ? 6 : 14
