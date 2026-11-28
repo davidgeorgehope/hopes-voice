@@ -811,32 +811,33 @@ struct ContentView: View {
     /// Sticky Recents. Hidden when empty. Same cream/ink/slate cells as cores.
     /// Stays outside the grid ScrollView so it remains visible inside folders.
     private var recentsRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: chrome.coreSpacing) {
-                ForEach(store.recentCards) { card in
-                    Button {
-                        store.tapRecent(card)
-                    } label: {
-                        CoreWordCell(
-                            card: card,
-                            label: store.displayLabel(for: card),
-                            image: store.image(for: card),
-                            remoteURL: store.remoteImageURL(for: card),
-                            revision: store.imageRevision[card.slug, default: 0],
-                            highlighted: store.lastSpokenSlug == card.slug
-                        )
-                        .frame(width: chrome.coreCellWidth)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(.isButton)
-                    .accessibilityLabel(store.displayLabel(for: card))
-                    .accessibilityHint("Adds this word to the sentence")
-                    .accessibilityIdentifier("recentWord-\(card.slug)")
+        // Same fixed-width cells as the core row and at most `recentsLimit` of them, so the row
+        // always fits the screen and never scrolls.
+        HStack(spacing: chrome.coreSpacing) {
+            ForEach(store.recentCards) { card in
+                Button {
+                    store.tapRecent(card)
+                } label: {
+                    CoreWordCell(
+                        card: card,
+                        label: store.displayLabel(for: card),
+                        image: store.image(for: card),
+                        remoteURL: store.remoteImageURL(for: card),
+                        revision: store.imageRevision[card.slug, default: 0],
+                        highlighted: store.lastSpokenSlug == card.slug
+                    )
+                    .frame(width: chrome.coreCellWidth)
                 }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityLabel(store.displayLabel(for: card))
+                .accessibilityHint("Adds this word to the sentence")
+                .accessibilityIdentifier("recentWord-\(card.slug)")
             }
-            .padding(.horizontal, chrome.corePadding)
-            .padding(.vertical, 8)
+            Spacer(minLength: 0)
         }
+        .padding(.horizontal, chrome.corePadding)
+        .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
         .frame(height: chrome.coreRowHeight + 16)
         .background(Theme.slate)

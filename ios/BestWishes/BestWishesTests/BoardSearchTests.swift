@@ -222,17 +222,17 @@ final class BoardSearchTests: XCTestCase {
         store.tap(want)
         store.tap(juice)
         XCTAssertEqual(store.strip.slugs, ["want", "juice"])
-        XCTAssertEqual(store.recentSlugs, ["juice", "want"])
+        XCTAssertEqual(store.recentSlugs, ["juice"])
         let cores = store.coreSlugs
         XCTAssertEqual(cores, CoreVocabulary.ordered.map(\.slug))
 
         store.setSearchQuery("zzzz-no-match")
         XCTAssertTrue(store.filteredCurrentItems.isEmpty)
         XCTAssertEqual(store.strip.slugs, ["want", "juice"])
-        XCTAssertEqual(store.recentSlugs, ["juice", "want"])
+        XCTAssertEqual(store.recentSlugs, ["juice"])
         XCTAssertEqual(store.coreSlugs, cores)
         XCTAssertEqual(store.coreCards.map(\.slug), cores)
-        XCTAssertEqual(store.recentCards.map(\.slug), ["juice", "want"])
+        XCTAssertEqual(store.recentCards.map(\.slug), ["juice"])
     }
 
     func testFilteredMatchesPreserveUnfilteredRelativeOrder() throws {

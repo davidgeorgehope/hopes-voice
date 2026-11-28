@@ -73,7 +73,9 @@ struct ProfileSettings: Equatable, Codable, Sendable {
             backgroundHex: background,
             colorMode: colorMode,
             showCoreRow: showChrome,
-            showRecents: showChrome
+            // Proloquo2Go has no Recents row by default, so an imported board starts without one.
+            // A caregiver can turn it on in Edit → Settings → Show recents.
+            showRecents: false
         )
     }
 

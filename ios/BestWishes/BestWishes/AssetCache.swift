@@ -369,10 +369,10 @@ final class AssetCache: Sendable {
         root.appendingPathComponent("message-bar-\(profile.fileKey).json")
     }
 
-    /// Last spoken slugs, most-recent-first, unique, capped at 8. Per profile.
+    /// Last spoken slugs, most-recent-first, unique, no core words, capped at `CardStore.recentsLimit`. Per profile.
     func saveRecents(_ slugs: [String], for profile: KidProfile) {
         do {
-            let data = try JSONEncoder().encode(slugs)
+            let data = try JSONEncoder().encode(CardStore.sanitizedRecents(slugs))
             try data.write(to: recentsFileURL(for: profile), options: .atomic)
         } catch {
             print("BestWishes: failed to persist recents: \(error)")
@@ -381,7 +381,7 @@ final class AssetCache: Sendable {
 
     func loadRecents(for profile: KidProfile) -> [String] {
         guard let data = try? Data(contentsOf: recentsFileURL(for: profile)) else { return [] }
-        return (try? JSONDecoder().decode([String].self, from: data)) ?? []
+        return CardStore.sanitizedRecents((try? JSONDecoder().decode([String].self, from: data)) ?? [])
     }
 
     func recentsFileURL(for profile: KidProfile) -> URL {
