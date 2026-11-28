@@ -114,6 +114,16 @@ struct BoardSettingsSheet: View {
                         ))
                         .accessibilityIdentifier("settingsWordTypeColors")
                     }
+                    if !store.hasImportedBoard {
+                        Picker("Home screen", selection: Binding(
+                            get: { store.homeLayout },
+                            set: { store.setHomeLayout($0) }
+                        )) {
+                            Text("My board").tag(HomeLayout.myBoard)
+                            Text("Core words").tag(HomeLayout.coreWords)
+                        }
+                        .accessibilityIdentifier("settingsHomeLayout")
+                    }
                     Toggle("Show core words", isOn: $draft.showCoreRow)
                     Toggle("Show recents", isOn: $draft.showRecents)
                 }

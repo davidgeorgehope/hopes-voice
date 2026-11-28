@@ -61,6 +61,15 @@ extension CardStore {
         }
         let columns = max(columns, 1)
         let rows = max(rows, 1)
+        if isAtRoot, homeLayout == .coreWords {
+            // Core-word home: fixed spots in reading order, never moved by drags or edits.
+            let items = coreHomeItems
+            let total = max(rows, (items.count + columns - 1) / columns) * columns
+            return (0..<total).map { index in
+                let coord = GridCoord.rowMajor(index: index, columns: columns)
+                return index < items.count ? .item(items[index], coord) : .empty(coord)
+            }
+        }
         var placed = placements(columns: columns)
         let maxRow = placed.values.map(\.row).max() ?? -1
         let displayRows = max(rows, maxRow + 1)

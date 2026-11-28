@@ -57,6 +57,7 @@
 		A10000000000000000000014 /* GridLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* GridLayout.swift */; };
 		A10000000000000000000015 /* GridLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* GridLayoutTests.swift */; };
 		C194E6727168A6E1974ED709 /* WordClassTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C294E6727168A6E1974ED709 /* WordClassTests.swift */; };
+		C15F8C6DF5331FB8937EA3B1 /* CoreWordsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C25F8C6DF5331FB8937EA3B1 /* CoreWordsTests.swift */; };
 		C1E96B5F5BD881846AAB92B9 /* WordFormsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2E96B5F5BD881846AAB92B9 /* WordFormsTests.swift */; };
 		C127B322A7ED1B68275B4C88 /* VocabularyBackupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C227B322A7ED1B68275B4C88 /* VocabularyBackupTests.swift */; };
 		C18BDA1EE2ADCC95C1C4A451 /* HideShowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C28BDA1EE2ADCC95C1C4A451 /* HideShowTests.swift */; };
@@ -64,6 +65,7 @@
 		C1B7004E37DC811080666153 /* WordPredictorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2B7004E37DC811080666153 /* WordPredictorTests.swift */; };
 		A10000000000000000000017 /* BoardContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* BoardContractTests.swift */; };
 		A10000000000000000000018 /* CoreVocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* CoreVocabulary.swift */; };
+		C1C4570DACA3A3C3CE7ADB11 /* CoreWords.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C4570DACA3A3C3CE7ADB11 /* CoreWords.swift */; };
 		A10000000000000000000019 /* CoreVocabularyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* CoreVocabularyTests.swift */; };
 		A1000000000000000000001A /* ProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* ProfileStore.swift */; };
 		A1000000000000000000001B /* ProfileStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* ProfileStoreTests.swift */; };
@@ -77,6 +79,7 @@
 		A10000000000000000000022 /* Speech.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* Speech.framework */; };
 		B10000000000000000000001 /* HoldToEditUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* HoldToEditUITests.swift */; };
 		C1C635D0A05A8172E571A72E /* LayoutFitUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C635D0A05A8172E571A72E /* LayoutFitUITests.swift */; };
+		C1BE88367BCD5506251B4F99 /* CoreWordsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2BE88367BCD5506251B4F99 /* CoreWordsUITests.swift */; };
 		C1C5B5F3188EAC5741C4E245 /* WordFormsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C5B5F3188EAC5741C4E245 /* WordFormsUITests.swift */; };
 		C1B113A980D73C38D0FB264E /* BackupUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2B113A980D73C38D0FB264E /* BackupUITests.swift */; };
 		C118C7A4E6461E6049241E4C /* HideShowUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C218C7A4E6461E6049241E4C /* HideShowUITests.swift */; };
@@ -160,6 +163,7 @@
 		A20000000000000000000015 /* GridLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridLayout.swift; sourceTree = "<group>"; };
 		A20000000000000000000016 /* GridLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridLayoutTests.swift; sourceTree = "<group>"; };
 		C294E6727168A6E1974ED709 /* WordClassTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordClassTests.swift; sourceTree = "<group>"; };
+		C25F8C6DF5331FB8937EA3B1 /* CoreWordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreWordsTests.swift; sourceTree = "<group>"; };
 		C2E96B5F5BD881846AAB92B9 /* WordFormsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordFormsTests.swift; sourceTree = "<group>"; };
 		C227B322A7ED1B68275B4C88 /* VocabularyBackupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocabularyBackupTests.swift; sourceTree = "<group>"; };
 		C28BDA1EE2ADCC95C1C4A451 /* HideShowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HideShowTests.swift; sourceTree = "<group>"; };
@@ -167,6 +171,7 @@
 		C2B7004E37DC811080666153 /* WordPredictorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordPredictorTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000017 /* BoardContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardContractTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000018 /* CoreVocabulary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreVocabulary.swift; sourceTree = "<group>"; };
+		C2C4570DACA3A3C3CE7ADB11 /* CoreWords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreWords.swift; sourceTree = "<group>"; };
 		A20000000000000000000019 /* CoreVocabularyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreVocabularyTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000001A /* ProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStore.swift; sourceTree = "<group>"; };
 		A2000000000000000000001B /* ProfileStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStoreTests.swift; sourceTree = "<group>"; };
@@ -180,6 +185,7 @@
 		A20000000000000000000022 /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
 		B20000000000000000000001 /* HoldToEditUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldToEditUITests.swift; sourceTree = "<group>"; };
 		C2C635D0A05A8172E571A72E /* LayoutFitUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutFitUITests.swift; sourceTree = "<group>"; };
+		C2BE88367BCD5506251B4F99 /* CoreWordsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreWordsUITests.swift; sourceTree = "<group>"; };
 		C2C5B5F3188EAC5741C4E245 /* WordFormsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordFormsUITests.swift; sourceTree = "<group>"; };
 		C2B113A980D73C38D0FB264E /* BackupUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupUITests.swift; sourceTree = "<group>"; };
 		C218C7A4E6461E6049241E4C /* HideShowUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HideShowUITests.swift; sourceTree = "<group>"; };
@@ -265,6 +271,7 @@
 				A20000000000000000000011 /* BoardGrouping.swift */,
 				A20000000000000000000015 /* GridLayout.swift */,
 				A20000000000000000000018 /* CoreVocabulary.swift */,
+				C2C4570DACA3A3C3CE7ADB11 /* CoreWords.swift */,
 				A2000000000000000000001A /* ProfileStore.swift */,
 				A2000000000000000000001F /* VoiceAdd.swift */,
 				A20000000000000000000905 /* SyncSettingsSection.swift */,
@@ -313,6 +320,7 @@
 				A20000000000000000000014 /* OfflineBoardTests.swift */,
 				A20000000000000000000016 /* GridLayoutTests.swift */,
 				C294E6727168A6E1974ED709 /* WordClassTests.swift */,
+				C25F8C6DF5331FB8937EA3B1 /* CoreWordsTests.swift */,
 				C2E96B5F5BD881846AAB92B9 /* WordFormsTests.swift */,
 				C227B322A7ED1B68275B4C88 /* VocabularyBackupTests.swift */,
 				C28BDA1EE2ADCC95C1C4A451 /* HideShowTests.swift */,
@@ -341,6 +349,7 @@
 			children = (
 				B20000000000000000000001 /* HoldToEditUITests.swift */,
 				C2C635D0A05A8172E571A72E /* LayoutFitUITests.swift */,
+				C2BE88367BCD5506251B4F99 /* CoreWordsUITests.swift */,
 				C2C5B5F3188EAC5741C4E245 /* WordFormsUITests.swift */,
 				C2B113A980D73C38D0FB264E /* BackupUITests.swift */,
 				C218C7A4E6461E6049241E4C /* HideShowUITests.swift */,
@@ -510,6 +519,7 @@
 				A1000000000000000000000F /* BoardGrouping.swift in Sources */,
 				A10000000000000000000014 /* GridLayout.swift in Sources */,
 				A10000000000000000000018 /* CoreVocabulary.swift in Sources */,
+				C1C4570DACA3A3C3CE7ADB11 /* CoreWords.swift in Sources */,
 				A1000000000000000000001A /* ProfileStore.swift in Sources */,
 				A1000000000000000000001F /* VoiceAdd.swift in Sources */,
 				A10000000000000000000905 /* SyncSettingsSection.swift in Sources */,
@@ -542,6 +552,7 @@
 				A10000000000000000000013 /* OfflineBoardTests.swift in Sources */,
 				A10000000000000000000015 /* GridLayoutTests.swift in Sources */,
 				C194E6727168A6E1974ED709 /* WordClassTests.swift in Sources */,
+				C15F8C6DF5331FB8937EA3B1 /* CoreWordsTests.swift in Sources */,
 				C1E96B5F5BD881846AAB92B9 /* WordFormsTests.swift in Sources */,
 				C127B322A7ED1B68275B4C88 /* VocabularyBackupTests.swift in Sources */,
 				C18BDA1EE2ADCC95C1C4A451 /* HideShowTests.swift in Sources */,
@@ -566,6 +577,7 @@
 			files = (
 				B10000000000000000000001 /* HoldToEditUITests.swift in Sources */,
 				C1C635D0A05A8172E571A72E /* LayoutFitUITests.swift in Sources */,
+				C1BE88367BCD5506251B4F99 /* CoreWordsUITests.swift in Sources */,
 				C1C5B5F3188EAC5741C4E245 /* WordFormsUITests.swift in Sources */,
 				C1B113A980D73C38D0FB264E /* BackupUITests.swift in Sources */,
 				C118C7A4E6461E6049241E4C /* HideShowUITests.swift in Sources */,

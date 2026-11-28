@@ -88,7 +88,10 @@ final class LayoutFitUITests: XCTestCase {
         attachScreenshot("home-portrait")
         let cells = assertEverythingFitsWidth(app, "home portrait")
         let window = app.windows.firstMatch.frame
-        guard let lowest = cells.map(\.maxY).max() else { return XCTFail("no cells") }
+        // Rows wholly below the screen are scrolled away (iPad shows whole rows only); a row that
+        // starts on screen must end on screen.
+        let onScreen = cells.filter { $0.minY < window.maxY - 1 }
+        guard let lowest = onScreen.map(\.maxY).max() else { return XCTFail("no cells") }
         XCTAssertLessThanOrEqual(lowest, window.maxY + 1, "a home-board row is cut off at the bottom")
         XCTAssertGreaterThan(lowest, window.maxY - window.height * 0.12, "the board leaves the bottom of the screen empty")
         let widths = Set(cells.map { Int($0.width.rounded()) })

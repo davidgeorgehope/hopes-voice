@@ -1734,6 +1734,9 @@ struct ContentView: View {
         mode.applyLaunchArguments(args)
         profiles.applyLaunchArguments(args, overlay: store, grid: grid)
         // Test hook: start from the default board's Home (drops a saved import and folder).
+        if args.contains("-ClearRecents") {
+            store.clearRecents()
+        }
         if args.contains("-ClearImportedBoard") {
             store.clearImportedBoard()
             grid.resetToSizeClassDefaults(isCompact: horizontalSizeClass == .compact)
@@ -1806,6 +1809,10 @@ struct ContentView: View {
         }
         if args.contains("-ShowHidden") {
             showingHidden = true
+        }
+        if let idx = args.firstIndex(of: "-HomeLayout"), args.indices.contains(idx + 1),
+           let layout = HomeLayout(rawValue: args[idx + 1]) {
+            store.setHomeLayout(layout)
         }
         if let idx = args.firstIndex(of: "-HideSlug"), args.indices.contains(idx + 1) {
             let slug = args[idx + 1]

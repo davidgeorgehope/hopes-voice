@@ -38,6 +38,8 @@ final class CardStore {
     @ObservationIgnored var onInteraction: (() -> Void)?
     var imageRevision: [String: Int] = [:]
     var strip = SentenceStrip()
+    /// See `homeLayout`.
+    var storedHomeLayout: HomeLayout = .myBoard
     /// Caregiver search text. Filter is a view over `currentItems`; not persisted.
     var searchQuery: String = ""
     /// Active kid overlay. Board cards and PECS/MP3 cache are shared.
@@ -77,7 +79,37 @@ final class CardStore {
             }
         }
         let parentId = currentFolder?.id
+        if parentId == nil, homeLayout == .coreWords {
+            return coreHomeItems
+        }
         return Self.applyingOrder(membershipItems(parentId: parentId), saved: orderOverlays[Self.orderKey(folderId: parentId)])
+    }
+
+    /// Core-word home: fixed core words (using a matching visible button when there is one),
+    /// then the board's top-level folders.
+    var coreHomeItems: [BoardItem] {
+        let visible = cards.filter { !hiddenSlugs.contains($0.slug) }
+        let folders = grouping.folders(parentId: nil).filter { !hiddenSlugs.contains("folder:\($0.id)") && !isCoreWordsStore($0.id) }
+        return CoreWords.items(
+            existing: { word in visible.first { displayLabel(for: $0).caseInsensitiveCompare(word) == .orderedSame } },
+            folders: folders
+        )
+    }
+
+    /// The shared board keeps the core words' pictures in one folder. It backs the Core words
+    /// home and is never shown as a folder, so My board stays as the family arranged it.
+    func isCoreWordsStore(_ folderId: String) -> Bool {
+        !hasImportedBoard && folderId == CoreWords.storeFolderId
+    }
+
+    /// Home screen choice for this profile. Only boards that aren't imported offer it.
+    var homeLayout: HomeLayout {
+        hasImportedBoard ? .myBoard : storedHomeLayout
+    }
+
+    func setHomeLayout(_ layout: HomeLayout) {
+        storedHomeLayout = layout
+        cache.saveHomeLayout(layout, for: activeProfile)
     }
 
     /// `BoardItem.id`s on the open board, in the order the grid shows.
@@ -182,6 +214,7 @@ final class CardStore {
         messageBar = cache.loadMessageBarSettings(for: profile)
         settings = cache.loadProfileSettings(for: profile)
         recentSlugs = Self.sanitizedRecents(cache.loadRecents(for: profile))
+        storedHomeLayout = cache.loadHomeLayout(for: profile)
         folderPath = clampedFolderPath(cache.loadFolderPath(for: profile))
         loadImportedBoardIfPresent()
         if hasImportedBoard {
@@ -248,6 +281,7 @@ final class CardStore {
         messageBar = cache.loadMessageBarSettings(for: profile)
         settings = cache.loadProfileSettings(for: profile)
         recentSlugs = Self.sanitizedRecents(cache.loadRecents(for: profile))
+        storedHomeLayout = cache.loadHomeLayout(for: profile)
         folderPath = clampedFolderPath(cache.loadFolderPath(for: profile))
         loadImportedBoardIfPresent()
         if hasImportedBoard {
@@ -889,6 +923,12 @@ final class CardStore {
     /// Counting events: grid tap, core-row tap, Recents tap (via `tap`), and
     /// sentence-strip Speak. Folder taps do not count. Unique by slug, insert
     /// front, cap `recentsLimit`, core-row words skipped. Speak of `[I, want, juice, ice cream]` → `ice-cream, juice`.
+    /// Test hook: forget the Recents row for this profile.
+    func clearRecents() {
+        recentSlugs = []
+        persistRecents()
+    }
+
     func recordSpoken(slugs: [String]) {
         var next = recentSlugs
         for slug in slugs where !slug.isEmpty {
@@ -906,7 +946,9 @@ final class CardStore {
     /// Membership of the open board after hide, before the order overlay.
     /// Default is folders first (name), then word cards.
     func membershipItems(parentId: String?) -> [BoardItem] {
-        let folderItems = grouping.folders(parentId: parentId).map { BoardItem.folder($0) }
+        let folderItems = grouping.folders(parentId: parentId)
+            .filter { !isCoreWordsStore($0.id) }
+            .map { BoardItem.folder($0) }
         let wordItems: [BoardItem]
         if let parentId, let folder = grouping.folder(id: parentId) {
             wordItems = folder.memberSlugs.compactMap { slug in
