@@ -75,7 +75,7 @@ struct ProfileSettings: Equatable, Codable, Sendable {
             backgroundHex: background,
             colorMode: colorMode,
             showCoreRow: showChrome,
-            // Proloquo2Go has no Recents row by default, so an imported board starts without one.
+            // Most AAC boards have no Recents row, so an imported board starts without one.
             // A caregiver can turn it on in Edit → Settings → Show recents.
             showRecents: false
         )
@@ -90,7 +90,7 @@ struct ProfileSettings: Equatable, Codable, Sendable {
         return resolved
     }
 
-    /// Infer the compact blue P2G-style bar when the file describes it but omits `style`.
+    /// Infer the compact blue bar when the file describes it but omits `style`.
     static func looksLikeCompactBlueBar(_ profile: BoardImportProfile) -> Bool {
         if let background = stripHash(profile.messageBar.background), background == "0000CB" {
             return true

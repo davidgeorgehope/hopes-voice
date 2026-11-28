@@ -45,7 +45,7 @@ final class CaregiverMode {
         defaults.set(true, forKey: Self.defaultsKey)
     }
 
-    /// Main P2G-style path: unlock caregiver tools and go straight into Edit.
+    /// Main path: unlock caregiver tools and go straight into Edit.
     /// Used by the toolbar hold-to-edit control and the title long-press.
     func unlockAndEdit() {
         unlock()

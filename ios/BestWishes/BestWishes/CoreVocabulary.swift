@@ -1,6 +1,6 @@
 import Foundation
 
-/// Proloquo-style core strip. Words are resolved against **server** cards
+/// Core word strip. Words are resolved against **server** cards
 /// (same `Card` records the grid uses). Art and MP3s come from the on-device
 /// cache of server assets — nothing is bundled locally.
 enum CoreVocabulary {

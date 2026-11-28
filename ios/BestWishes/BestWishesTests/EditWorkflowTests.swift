@@ -14,7 +14,7 @@ final class EditWorkflowTests: XCTestCase {
     }
 
     private func makeStore() throws -> CardStore {
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent("bw-p2g-\(UUID().uuidString)", isDirectory: true)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("bw-edit-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         return CardStore(cache: AssetCache(root: root), player: SpeechPlayer())
     }

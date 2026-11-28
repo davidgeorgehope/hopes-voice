@@ -31,7 +31,7 @@ The product brief is [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md). The API con
 
 ## Tone and product
 
-This is a communication tool for kids. Keep the caregiver UI calm and the kid board uncluttered. We copy familiar AAC *interaction*, not anyone else's symbols, voices, or branding. Do not claim affiliation with Proloquo2Go or AssistiveWare.
+This is a communication tool for kids. Keep the caregiver UI calm and the kid board uncluttered. We copy familiar AAC *interaction*, not anyone else's symbols, voices, or branding. Do not name or claim affiliation with any commercial AAC app or vendor.
 
 ## License
 
