@@ -81,7 +81,7 @@ State lives next to the cache: `sync-state-<profile>.json` (agreed version, stag
 
 ## Development hooks
 
-Launch arguments, same pattern as the other hooks: `-SyncToken <t>` (stores into the Keychain), `-SyncNamespace <n>` (profile ids become `<n>-child1`, so tests never touch real boards), `-SyncIdleSeconds <s>`, `-SyncPollSeconds <s>`, `-SyncDemoLabel slug=Label`, `-SyncDemoHide slug`, and the existing `-APIBaseURL`.
+Launch arguments, same pattern as the other hooks: `-SyncToken <t>` (stores into the Keychain), `-SyncNamespace <n>` (profile ids become `<n>-child1`, so tests never touch real boards), `-SyncBaseURL <url>` (sync host if different from the API host), `-SyncIdleSeconds <s>`, `-SyncPollSeconds <s>`, `-SyncDemoLabel slug=Label`, `-SyncDemoHide slug`, and the existing `-APIBaseURL`.
 
 ## Tests
 

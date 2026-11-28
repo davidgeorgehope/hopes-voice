@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import SwiftUI
 import UIKit
+import os
 
 /// Keeps this device's profiles in step with the server without ever getting in the way.
 ///
@@ -24,6 +25,7 @@ final class SyncCoordinator {
     static let defaultIdleSeconds: TimeInterval = 20
     static let defaultPollSeconds: TimeInterval = 30
     static let pushDebounce: TimeInterval = 1.5
+    @ObservationIgnored private static let log = Logger(subsystem: "com.davidgeorgehope.hopesvoice", category: "sync")
 
     private(set) var status: Status = .off
     private(set) var syncedVersion: Int = 0
@@ -56,11 +58,13 @@ final class SyncCoordinator {
     ) {
         self.store = store
         self.cache = cache
-        self.baseURL = baseURL ?? APIClient.fromLaunchArguments(arguments).baseURL
         func value(_ flag: String) -> String? {
             guard let idx = arguments.firstIndex(of: flag), arguments.indices.contains(idx + 1) else { return nil }
             return arguments[idx + 1]
         }
+        self.baseURL = baseURL
+            ?? value("-SyncBaseURL").flatMap(URL.init(string:))
+            ?? APIClient.fromLaunchArguments(arguments).baseURL
         self.namespace = value("-SyncNamespace").map { $0.isEmpty ? "" : $0 + "-" } ?? ""
         self.idleSeconds = value("-SyncIdleSeconds").flatMap(TimeInterval.init) ?? Self.defaultIdleSeconds
         self.pollSeconds = value("-SyncPollSeconds").flatMap(TimeInterval.init) ?? Self.defaultPollSeconds
@@ -84,6 +88,7 @@ final class SyncCoordinator {
         cache.setChangeObserver { [weak self] profile in
             Task { @MainActor [weak self] in self?.localEdit(profile) }
         }
+        Self.log.info("sync started, token=\(self.hasToken) base=\(self.baseURL.absoluteString, privacy: .public)")
         applyStagedNow()
         loop = Task { [weak self] in
             while !Task.isCancelled {
@@ -151,7 +156,10 @@ final class SyncCoordinator {
 
     /// One pass: ask which profiles changed (304 when nothing did), then sync only those.
     func tick() async {
-        guard !running, let client = client() else { return }
+        guard !running, let client = client() else {
+            Self.log.info("sync skipped: running=\(self.running) token=\(self.hasToken)")
+            return
+        }
         running = true
         defer { running = false }
         status = .syncing
@@ -181,14 +189,17 @@ final class SyncCoordinator {
             }
             lastSyncedAt = Date()
             status = .idle
+            Self.log.info("sync pass ok, version \(self.syncedVersion)")
             applyIfSafe()
         } catch let error as SyncError {
+            Self.log.error("sync pass failed: \(error.localizedDescription, privacy: .public)")
             switch error {
             case .offline: status = .offline
             case .unauthorized: status = .failed(error.localizedDescription)
             default: status = .failed(error.localizedDescription)
             }
         } catch {
+            Self.log.error("sync pass failed: \(String(describing: error), privacy: .public)")
             status = .offline
         }
     }
