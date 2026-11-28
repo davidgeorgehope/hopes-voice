@@ -1,0 +1,105 @@
+{
+ "createdAt": "2026-11-28T12:00:00Z",
+ "format": "hopesvoice.backup/v1",
+ "pictures": {},
+ "profiles": {
+  "child1": {
+   "doc": {
+    "format": "bestwishes.sync/v1",
+    "images": {},
+    "overlays": {
+     "hidden": [],
+     "labels": {},
+     "order": {},
+     "positions": {},
+     "speak": {},
+     "styles": {}
+    }
+   },
+   "messageBar": {
+    "clearAfterSpeak": false,
+    "showDeleteLast": true,
+    "speakOnBarTap": true,
+    "speakOnTap": true,
+    "style": "standard",
+    "textAboveImage": false
+   },
+   "recents": [],
+   "settings": {
+    "backgroundHex": "E8DBC2",
+    "colorMode": "custom",
+    "colorScheme": "fitzgerald",
+    "colors": {},
+    "homeBoard": "home",
+    "messageBar": {
+     "clearAfterSpeak": false,
+     "showDeleteLast": true,
+     "speakOnBarTap": true,
+     "speakOnTap": true,
+     "style": "standard",
+     "textAboveImage": false
+    },
+    "returnHomeAfterSelection": false,
+    "showCoreRow": true,
+    "showRecents": true,
+    "viewportCols": 6,
+    "viewportRows": 4,
+    "voice": {
+     "engine": "system",
+     "pitch": 1,
+     "rate": 1,
+     "voiceId": "com.apple.voice.compact.en-US.Samantha"
+    }
+   }
+  },
+  "child2": {
+   "doc": {
+    "format": "bestwishes.sync/v1",
+    "images": {},
+    "overlays": {
+     "hidden": [],
+     "labels": {},
+     "order": {},
+     "positions": {},
+     "speak": {},
+     "styles": {}
+    }
+   },
+   "messageBar": {
+    "clearAfterSpeak": false,
+    "showDeleteLast": true,
+    "speakOnBarTap": true,
+    "speakOnTap": true,
+    "style": "standard",
+    "textAboveImage": false
+   },
+   "recents": [],
+   "settings": {
+    "backgroundHex": "E8DBC2",
+    "colorMode": "custom",
+    "colorScheme": "fitzgerald",
+    "colors": {},
+    "homeBoard": "home",
+    "messageBar": {
+     "clearAfterSpeak": false,
+     "showDeleteLast": true,
+     "speakOnBarTap": true,
+     "speakOnTap": true,
+     "style": "standard",
+     "textAboveImage": false
+    },
+    "returnHomeAfterSelection": false,
+    "showCoreRow": true,
+    "showRecents": true,
+    "viewportCols": 6,
+    "viewportRows": 4,
+    "voice": {
+     "engine": "system",
+     "pitch": 1,
+     "rate": 1,
+     "voiceId": "com.apple.voice.compact.en-US.Samantha"
+    }
+   }
+  }
+ }
+}
