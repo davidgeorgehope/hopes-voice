@@ -421,8 +421,17 @@ final class CardStore {
     }
 
     func openFolder(id: String) {
-        guard grouping.folder(id: id) != nil else { return }
-        folderPath.append(id)
+        let stripped = id.hasPrefix("folder:") ? String(id.dropFirst("folder:".count)) : id
+        let resolved = importTargets[id] ?? importTargets[stripped] ?? stripped
+        let exists = grouping.folder(id: resolved) != nil
+            || (importedDocument?.boards.contains(where: { $0.id == resolved }) ?? false)
+        guard exists else { return }
+        if importedDocument?.profile.homeBoard == resolved {
+            goHome()
+            return
+        }
+        if folderPath.last == resolved { return }
+        folderPath.append(resolved)
         persistFolderPath()
     }
 

@@ -280,4 +280,22 @@ final class BoardImportTests: XCTestCase {
         try store.importBoard(from: dest)
         XCTAssertNotNil(store.image(for: Card(word: "help", slug: "help", imageURL: "", audioURL: "")), "the local original should be cached under the cell id")
     }
+
+    @MainActor
+    func testOpenFolderResolvesAnImportTarget() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("bw-import-open-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let store = CardStore(cache: AssetCache(root: root), player: SpeechPlayer())
+        try store.importBoard(from: sampleURL())
+
+        store.openFolder(id: "want")
+        XCTAssertEqual(store.folderPath, ["food"])
+        XCTAssertTrue(store.currentItems.contains(where: { $0.id == "water" }))
+
+        store.goHome()
+        store.openFolder(id: "food")
+        store.openFolder(id: "food")
+        XCTAssertEqual(store.folderPath, ["food"], "opening the same folder twice should not nest it")
+    }
+
 }
