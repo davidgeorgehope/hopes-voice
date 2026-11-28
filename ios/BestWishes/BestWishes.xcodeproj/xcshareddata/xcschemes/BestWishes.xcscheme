@@ -39,6 +39,17 @@
                ReferencedContainer = "container:BestWishes.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "B50000000000000000000001"
+               BuildableName = "BestWishesUITests.xctest"
+               BlueprintName = "BestWishesUITests"
+               ReferencedContainer = "container:BestWishes.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
