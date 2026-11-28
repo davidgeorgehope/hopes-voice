@@ -124,15 +124,31 @@ final class CardStore {
         coreCards.map(\.slug)
     }
 
-    /// Max distinct spoken words kept on the Recents row.
-    static let recentsLimit = 8
+    /// Max distinct words on the Recents row: one row of cells, the same width as the core row,
+    /// so it fits any screen without scrolling.
+    static let recentsLimit = 6
+
+    /// Most recent first, one entry per word, never a core-row word, at most `recentsLimit`.
+    /// Applied when a word is spoken, when Recents are read from disk and when they are saved,
+    /// so a file written by an older version (8 entries, core words) is trimmed on load.
+    nonisolated static func sanitizedRecents(_ slugs: [String]) -> [String] {
+        var seen = Set<String>()
+        var result: [String] = []
+        for slug in slugs where !slug.isEmpty && !CoreVocabulary.slugs.contains(slug) {
+            guard seen.insert(slug).inserted else { continue }
+            result.append(slug)
+            if result.count == recentsLimit { break }
+        }
+        return result
+    }
 
     /// Recents in display order (most recent first). Missing vocabulary is skipped.
     var recentCards: [Card] {
         guard settings.showRecents else { return [] }
-        return recentSlugs.compactMap { slug in
+        let found = recentSlugs.compactMap { slug in
             cards.first { $0.slug == slug }
-        }
+        }.filter { !CoreVocabulary.matches($0) }
+        return Array(found.prefix(Self.recentsLimit))
     }
 
     private let api: APIClient
@@ -165,7 +181,7 @@ final class CardStore {
         styleOverlays = cache.loadStyleOverlays(for: profile)
         messageBar = cache.loadMessageBarSettings(for: profile)
         settings = cache.loadProfileSettings(for: profile)
-        recentSlugs = cache.loadRecents(for: profile)
+        recentSlugs = Self.sanitizedRecents(cache.loadRecents(for: profile))
         folderPath = clampedFolderPath(cache.loadFolderPath(for: profile))
         loadImportedBoardIfPresent()
         if hasImportedBoard {
@@ -196,7 +212,7 @@ final class CardStore {
         reloadOverlaysFromDisk()
         messageBar = cache.loadMessageBarSettings(for: profile)
         settings = cache.loadProfileSettings(for: profile)
-        recentSlugs = cache.loadRecents(for: profile)
+        recentSlugs = Self.sanitizedRecents(cache.loadRecents(for: profile))
         folderPath = clampedFolderPath(cache.loadFolderPath(for: profile))
         loadImportedBoardIfPresent()
         if hasImportedBoard {
@@ -768,17 +784,14 @@ final class CardStore {
 
     /// Counting events: grid tap, core-row tap, Recents tap (via `tap`), and
     /// sentence-strip Speak. Folder taps do not count. Unique by slug, insert
-    /// front, cap `recentsLimit`. Speak of `[I, want, juice]` → `juice, want, i`.
+    /// front, cap `recentsLimit`, core-row words skipped. Speak of `[I, want, juice, ice cream]` → `ice-cream, juice`.
     func recordSpoken(slugs: [String]) {
         var next = recentSlugs
         for slug in slugs where !slug.isEmpty {
             next.removeAll { $0 == slug }
             next.insert(slug, at: 0)
         }
-        if next.count > Self.recentsLimit {
-            next = Array(next.prefix(Self.recentsLimit))
-        }
-        recentSlugs = next
+        recentSlugs = Self.sanitizedRecents(next)
         persistRecents()
     }
 
