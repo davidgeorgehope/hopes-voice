@@ -67,6 +67,7 @@
 		A10000000000000000000022 /* Speech.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* Speech.framework */; };
 		B10000000000000000000001 /* HoldToEditUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* HoldToEditUITests.swift */; };
 		C1C635D0A05A8172E571A72E /* LayoutFitUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C635D0A05A8172E571A72E /* LayoutFitUITests.swift */; };
+		C16C6732B8F7E622A9747ABA /* NewPictureUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C26C6732B8F7E622A9747ABA /* NewPictureUITests.swift */; };
 		B10000000000000000000010 /* PerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000010 /* PerformanceTests.swift */; };
 		B10000000000000000000011 /* ThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000011 /* ThumbnailCache.swift */; };
 		B10000000000000000000012 /* ThumbnailCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000012 /* ThumbnailCacheTests.swift */; };
@@ -154,6 +155,7 @@
 		A20000000000000000000022 /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
 		B20000000000000000000001 /* HoldToEditUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldToEditUITests.swift; sourceTree = "<group>"; };
 		C2C635D0A05A8172E571A72E /* LayoutFitUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutFitUITests.swift; sourceTree = "<group>"; };
+		C26C6732B8F7E622A9747ABA /* NewPictureUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewPictureUITests.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* BestWishesUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BestWishesUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B20000000000000000000010 /* PerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000011 /* ThumbnailCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCache.swift; sourceTree = "<group>"; };
@@ -299,6 +301,7 @@
 			children = (
 				B20000000000000000000001 /* HoldToEditUITests.swift */,
 				C2C635D0A05A8172E571A72E /* LayoutFitUITests.swift */,
+				C26C6732B8F7E622A9747ABA /* NewPictureUITests.swift */,
 			);
 			path = BestWishesUITests;
 			sourceTree = "<group>";
@@ -508,6 +511,7 @@
 			files = (
 				B10000000000000000000001 /* HoldToEditUITests.swift in Sources */,
 				C1C635D0A05A8172E571A72E /* LayoutFitUITests.swift in Sources */,
+				C16C6732B8F7E622A9747ABA /* NewPictureUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
