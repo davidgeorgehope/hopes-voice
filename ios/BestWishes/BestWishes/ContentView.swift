@@ -31,6 +31,7 @@ struct ContentView: View {
     @State private var pendingVoiceWord: String?
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var viewWidth: CGFloat = Self.initialViewWidth
+    @State private var viewHeight: CGFloat = UIScreen.main.bounds.height
 
     private static var initialViewWidth: CGFloat {
         UIScreen.main.bounds.width
@@ -40,8 +41,24 @@ struct ContentView: View {
         BoardChrome.make(
             horizontalSizeClass: horizontalSizeClass,
             availableWidth: viewWidth,
-            columnCount: grid.columnCount
+            columnCount: defaultBoardColumns,
+            availableHeight: viewHeight
         )
+    }
+
+    /// iPad held sideways turns the default board so it's wider than tall (Columns 4 and
+    /// Rows 6 show 6 across and 4 down). Saved spots keep their row and column, so a button
+    /// is in the same place in both orientations. Imported boards keep their own grid.
+    private var turnsDefaultBoard: Bool {
+        horizontalSizeClass != .compact && viewWidth >= 600 && viewWidth > viewHeight
+    }
+
+    private var defaultBoardColumns: Int {
+        turnsDefaultBoard ? max(grid.columnCount, grid.rowCount) : grid.columnCount
+    }
+
+    private var defaultBoardRows: Int {
+        turnsDefaultBoard ? min(grid.columnCount, grid.rowCount) : grid.rowCount
     }
 
     init(
@@ -65,8 +82,12 @@ struct ContentView: View {
         GeometryReader { geo in
             rootStack
                 .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
-                .onAppear { updateViewWidth(geo.size.width) }
+                .onAppear {
+                    updateViewWidth(geo.size.width)
+                    viewHeight = geo.size.height
+                }
                 .onChange(of: geo.size.width) { _, width in updateViewWidth(width) }
+                .onChange(of: geo.size.height) { _, height in if height > 0 { viewHeight = height } }
         }
     }
 
@@ -922,17 +943,28 @@ struct ContentView: View {
     private var defaultBoardGrid: some View {
         GeometryReader { geo in
             let slots = boardSlots
-            let cols = max(store.importedBoardCols ?? grid.columnCount, 1)
+            let cols = max(store.importedBoardCols ?? defaultBoardColumns, 1)
             let totalRows = max((slots.count + cols - 1) / cols, 1)
             let verticalPadding = chrome.gridPadding + chrome.highlightStroke
-            let cellHeight = BoardChrome.fittedCellHeight(
-                available: geo.size.height,
-                rows: max(grid.rowCount, 1),
-                verticalPadding: verticalPadding,
-                spacing: chrome.gridSpacing,
-                minimum: chrome.minimumCellHeight
-            )
             let cellWidth = chrome.cellWidth(columns: cols)
+            // iPad keeps buttons from going flat (fewer rows on screen, the rest scroll);
+            // iPhone fits the Rows setting exactly.
+            let cellHeight = chrome.isCompact
+                ? BoardChrome.fittedCellHeight(
+                    available: geo.size.height,
+                    rows: max(grid.rowCount, 1),
+                    verticalPadding: verticalPadding,
+                    spacing: chrome.gridSpacing,
+                    minimum: chrome.minimumCellHeight
+                )
+                : BoardChrome.shapedCellHeight(
+                    available: geo.size.height,
+                    rows: max(defaultBoardRows, 1),
+                    cellWidth: cellWidth,
+                    verticalPadding: verticalPadding,
+                    spacing: chrome.gridSpacing,
+                    minimum: chrome.minimumCellHeight
+                )
             ScrollView(.vertical) {
                 // Lazy, so a board with hundreds of buttons only builds the rows on screen.
                 // Fixed columns keep every cell exactly `cellWidth` wide.
@@ -1024,18 +1056,18 @@ struct ContentView: View {
     /// Fixed row × column slots. Empty cells stay put so buttons never slide.
     private var boardSlots: [BoardSlot] {
         store.slots(
-            rows: store.importedBoardRows ?? grid.rowCount,
-            columns: store.importedBoardCols ?? grid.columnCount,
+            rows: store.importedBoardRows ?? defaultBoardRows,
+            columns: store.importedBoardCols ?? defaultBoardColumns,
             editing: mode.isEditing
         )
     }
 
     private var viewportRows: Int {
-        max(store.hasImportedBoard ? store.settings.viewportRows : grid.rowCount, 1)
+        max(store.hasImportedBoard ? store.settings.viewportRows : defaultBoardRows, 1)
     }
 
     private var viewportCols: Int {
-        max(store.hasImportedBoard ? store.settings.viewportCols : grid.columnCount, 1)
+        max(store.hasImportedBoard ? store.settings.viewportCols : defaultBoardColumns, 1)
     }
 
     /// Kid mode always shows the full current board. Caregiver search is a view over it.
@@ -1540,8 +1572,8 @@ struct ContentView: View {
     }
 
     private func openNewButtonEditor() {
-        let coord = store.firstEmptyCoord(rows: grid.rowCount, columns: grid.columnCount)
-            ?? GridCoord(row: grid.rowCount, col: 0)
+        let coord = store.firstEmptyCoord(rows: defaultBoardRows, columns: defaultBoardColumns)
+            ?? GridCoord(row: defaultBoardRows, col: 0)
         editorDraft = store.draftForNewButton(at: coord)
         if !mode.isEditing {
             mode.enterEdit()
