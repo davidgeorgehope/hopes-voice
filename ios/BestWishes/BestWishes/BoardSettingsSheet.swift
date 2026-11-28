@@ -5,15 +5,17 @@ import UniformTypeIdentifiers
 struct BoardSettingsSheet: View {
     @Bindable var store: CardStore
     var grid: GridLayout
+    var sync: SyncCoordinator?
     var onDismiss: () -> Void
     var onImport: () -> Void
 
     @State private var draft: ProfileSettings
     @State private var confirmClear = false
 
-    init(store: CardStore, grid: GridLayout, onDismiss: @escaping () -> Void, onImport: @escaping () -> Void) {
+    init(store: CardStore, grid: GridLayout, sync: SyncCoordinator? = nil, onDismiss: @escaping () -> Void, onImport: @escaping () -> Void) {
         self.store = store
         self.grid = grid
+        self.sync = sync
         self.onDismiss = onDismiss
         self.onImport = onImport
         _draft = State(initialValue: store.settings)
@@ -69,6 +71,9 @@ struct BoardSettingsSheet: View {
                         in: 0.7...1.3,
                         step: 0.05
                     )
+                }
+                if let sync {
+                    SyncSettingsSection(sync: sync, profileName: store.activeProfile.displayName)
                 }
                 Section("Import") {
                     Button("Import a board file…", action: onImport)

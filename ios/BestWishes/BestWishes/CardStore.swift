@@ -34,6 +34,8 @@ final class CardStore {
     var errorMessage: String?
     var banner: String?
     var lastSpokenSlug: String?
+    /// Set by sync so it can tell when the board is in use. Not observed by views.
+    @ObservationIgnored var onInteraction: (() -> Void)?
     var imageRevision: [String: Int] = [:]
     var strip = SentenceStrip()
     /// Caregiver search text. Filter is a view over `currentItems`; not persisted.
@@ -166,18 +168,25 @@ final class CardStore {
         }
     }
 
+    /// Re-read this profile's hide, order, label, position, spoken-text and color overlays.
+    /// Sync calls this after it writes an update from another device.
+    func reloadOverlaysFromDisk() {
+        hiddenSlugs = cache.loadHiddenSlugs(for: activeProfile)
+        orderOverlays = cache.loadOrderOverlays(for: activeProfile)
+        labelOverlays = cache.loadLabelOverlays(for: activeProfile)
+        positionOverlays = cache.loadPositionOverlays(for: activeProfile)
+        speakOverlays = cache.loadSpeakOverlays(for: activeProfile)
+        styleOverlays = cache.loadStyleOverlays(for: activeProfile)
+        folderPath = clampedFolderPath(folderPath)
+    }
+
     /// Same path the caregiver profile switcher uses. Reloads this profile's
     /// hide list, order, labels, recents, and folder path. Clears the sentence strip.
     /// Recents are not wiped. Does not refetch the server board or touch cached PECS/MP3 files.
     func switchToProfile(_ profile: KidProfile) {
         guard profile != activeProfile else { return }
         activeProfile = profile
-        hiddenSlugs = cache.loadHiddenSlugs(for: profile)
-        orderOverlays = cache.loadOrderOverlays(for: profile)
-        labelOverlays = cache.loadLabelOverlays(for: profile)
-        positionOverlays = cache.loadPositionOverlays(for: profile)
-        speakOverlays = cache.loadSpeakOverlays(for: profile)
-        styleOverlays = cache.loadStyleOverlays(for: profile)
+        reloadOverlaysFromDisk()
         messageBar = cache.loadMessageBarSettings(for: profile)
         settings = cache.loadProfileSettings(for: profile)
         recentSlugs = cache.loadRecents(for: profile)
@@ -341,6 +350,7 @@ final class CardStore {
     }
 
     func tap(_ card: Card) {
+        onInteraction?()
         strip.append(card)
         if messageBar.speakOnTap {
             preview(card)
@@ -350,11 +360,13 @@ final class CardStore {
 
     /// Same path a grid word cell uses. Core-row buttons call this.
     func tapCore(_ card: Card) {
+        onInteraction?()
         tap(card)
     }
 
     /// Same path a board/core tap uses: append to the strip and play cached MP3.
     func tapRecent(_ card: Card) {
+        onInteraction?()
         tap(card)
     }
 
@@ -407,6 +419,7 @@ final class CardStore {
 
     /// Same path the board cells use: words append, folders navigate.
     func select(_ item: BoardItem) {
+        onInteraction?()
         if selectImported(item) { return }
         switch item {
         case .word(let card):
@@ -417,10 +430,12 @@ final class CardStore {
     }
 
     func openFolder(_ folder: BoardFolder) {
+        onInteraction?()
         openFolder(id: folder.id)
     }
 
     func openFolder(id: String) {
+        onInteraction?()
         let stripped = id.hasPrefix("folder:") ? String(id.dropFirst("folder:".count)) : id
         let resolved = importTargets[id] ?? importTargets[stripped] ?? stripped
         let exists = grouping.folder(id: resolved) != nil
@@ -436,12 +451,14 @@ final class CardStore {
     }
 
     func goBack() {
+        onInteraction?()
         guard !folderPath.isEmpty else { return }
         folderPath.removeLast()
         persistFolderPath()
     }
 
     func goHome() {
+        onInteraction?()
         folderPath.removeAll()
         persistFolderPath()
     }
@@ -551,6 +568,7 @@ final class CardStore {
     }
 
     func speakStrip() {
+        onInteraction?()
         guard !strip.isEmpty else { return }
         lastSpokenSlug = strip.cards.first?.slug
         let texts = strip.cards.map { speakText(for: $0) }
@@ -562,15 +580,18 @@ final class CardStore {
     }
 
     func backspaceStrip() {
+        onInteraction?()
         strip.backspace()
     }
 
     func clearStrip() {
+        onInteraction?()
         strip.clear()
         lastSpokenSlug = nil
     }
 
     func appendSlugsFromBoard(_ slugs: [String]) {
+        onInteraction?()
         for slug in slugs {
             if let card = cards.first(where: { $0.slug == slug }) {
                 strip.append(card)

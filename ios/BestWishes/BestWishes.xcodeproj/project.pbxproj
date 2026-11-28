@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A10000000000000000000907 /* SyncEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000907 /* SyncEngineTests.swift */; };
+		A10000000000000000000906 /* SyncDocTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000906 /* SyncDocTests.swift */; };
+		A10000000000000000000905 /* SyncSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000905 /* SyncSettingsSection.swift */; };
+		A10000000000000000000904 /* SyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000904 /* SyncCoordinator.swift */; };
+		A10000000000000000000903 /* SyncPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000903 /* SyncPlanner.swift */; };
+		A10000000000000000000902 /* SyncCredentials.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000902 /* SyncCredentials.swift */; };
+		A10000000000000000000901 /* SyncClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000901 /* SyncClient.swift */; };
+		A10000000000000000000900 /* SyncDoc.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000900 /* SyncDoc.swift */; };
 		A10000000000000000000001 /* BestWishesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* BestWishesApp.swift */; };
 		A10000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* ContentView.swift */; };
 		A10000000000000000000003 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* Theme.swift */; };
@@ -75,6 +83,14 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A20000000000000000000907 /* SyncEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncEngineTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000906 /* SyncDocTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncDocTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000905 /* SyncSettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncSettingsSection.swift; sourceTree = "<group>"; };
+		A20000000000000000000904 /* SyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCoordinator.swift; sourceTree = "<group>"; };
+		A20000000000000000000903 /* SyncPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncPlanner.swift; sourceTree = "<group>"; };
+		A20000000000000000000902 /* SyncCredentials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCredentials.swift; sourceTree = "<group>"; };
+		A20000000000000000000901 /* SyncClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncClient.swift; sourceTree = "<group>"; };
+		A20000000000000000000900 /* SyncDoc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncDoc.swift; sourceTree = "<group>"; };
 		A20000000000000000000001 /* BestWishesApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BestWishesApp.swift; sourceTree = "<group>"; };
 		A20000000000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A20000000000000000000003 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -195,6 +211,12 @@
 				A20000000000000000000018 /* CoreVocabulary.swift */,
 				A2000000000000000000001A /* ProfileStore.swift */,
 				A2000000000000000000001F /* VoiceAdd.swift */,
+				A20000000000000000000905 /* SyncSettingsSection.swift */,
+				A20000000000000000000904 /* SyncCoordinator.swift */,
+				A20000000000000000000903 /* SyncPlanner.swift */,
+				A20000000000000000000902 /* SyncCredentials.swift */,
+				A20000000000000000000901 /* SyncClient.swift */,
+				A20000000000000000000900 /* SyncDoc.swift */,
 				A20000000000000000000020 /* VoiceRecognizer.swift */,
 				A20000000000000000000009 /* Assets.xcassets */,
 			);
@@ -240,6 +262,8 @@
 				A2000000000000000000001D /* RecentsTests.swift */,
 				A2000000000000000000001E /* BoardSearchTests.swift */,
 				A20000000000000000000021 /* VoiceAddTests.swift */,
+				A20000000000000000000907 /* SyncEngineTests.swift */,
+				A20000000000000000000906 /* SyncDocTests.swift */,
 			);
 			path = BestWishesTests;
 			sourceTree = "<group>";
@@ -407,6 +431,12 @@
 				A10000000000000000000018 /* CoreVocabulary.swift in Sources */,
 				A1000000000000000000001A /* ProfileStore.swift in Sources */,
 				A1000000000000000000001F /* VoiceAdd.swift in Sources */,
+				A10000000000000000000905 /* SyncSettingsSection.swift in Sources */,
+				A10000000000000000000904 /* SyncCoordinator.swift in Sources */,
+				A10000000000000000000903 /* SyncPlanner.swift in Sources */,
+				A10000000000000000000902 /* SyncCredentials.swift in Sources */,
+				A10000000000000000000901 /* SyncClient.swift in Sources */,
+				A10000000000000000000900 /* SyncDoc.swift in Sources */,
 				A10000000000000000000020 /* VoiceRecognizer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -432,6 +462,8 @@
 				A1000000000000000000001D /* RecentsTests.swift in Sources */,
 				A1000000000000000000001E /* BoardSearchTests.swift in Sources */,
 				A10000000000000000000021 /* VoiceAddTests.swift in Sources */,
+				A10000000000000000000907 /* SyncEngineTests.swift in Sources */,
+				A10000000000000000000906 /* SyncDocTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

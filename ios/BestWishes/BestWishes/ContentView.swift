@@ -7,6 +7,7 @@ struct ContentView: View {
     @State var mode: CaregiverMode
     @State var profiles: ProfileStore
     @State var grid: GridLayout
+    var sync: SyncCoordinator?
     @State private var draft = ""
     @State private var pendingHide: Card?
     @State private var pendingDelete: Card?
@@ -27,6 +28,7 @@ struct ContentView: View {
     @State private var voice = VoiceRecognizer()
     @State private var pendingVoiceWord: String?
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.boardCellExpands) private var boardCellExpands
     @State private var viewWidth: CGFloat = Self.initialViewWidth
 
@@ -46,9 +48,11 @@ struct ContentView: View {
         store: CardStore,
         mode: CaregiverMode = CaregiverMode(),
         profiles: ProfileStore = ProfileStore(),
-        grid: GridLayout? = nil
+        grid: GridLayout? = nil,
+        sync: SyncCoordinator? = nil
     ) {
         self.store = store
+        self.sync = sync
         _mode = State(initialValue: mode)
         _profiles = State(initialValue: profiles)
         _grid = State(initialValue: grid ?? GridLayout(profile: profiles.active))
@@ -103,6 +107,7 @@ struct ContentView: View {
             BoardSettingsSheet(
                 store: store,
                 grid: grid,
+                sync: sync,
                 onDismiss: { showingSettings = false },
                 onImport: {
                     showingSettings = false
@@ -130,7 +135,14 @@ struct ContentView: View {
         .onPreferenceChange(BoardWidthPreference.self) { viewWidth = $0 }
         .environment(\.boardChrome, chrome)
         .task { await store.bootstrap() }
-        .onAppear { consumeLaunchArguments() }
+        .onAppear {
+            sync?.isBusy = { mode.isEditing || showingSettings || editorDraft != nil }
+            sync?.start()
+            consumeLaunchArguments()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { sync?.sceneBecameActive() }
+        }
         .onChange(of: voice.finishedTranscript) { _, transcript in
             consumeVoiceTranscript(transcript)
         }
@@ -371,6 +383,7 @@ struct ContentView: View {
             ForEach(KidProfile.allCases) { profile in
                 Button {
                     profiles.switchTo(profile, overlay: store, grid: grid)
+                    sync?.profileDidChange()
                 } label: {
                     Text(profile.rawValue)
                         .font(.system(size: 18, weight: .heavy, design: .rounded))
@@ -1568,12 +1581,25 @@ struct ContentView: View {
         boardPage = max(page, 0)
     }
 
+    /// Test hooks that make a caregiver edit through the same store calls the editor uses:
+    /// `-SyncDemoLabel slug=Label` renames, `-SyncDemoHide slug` hides.
+    private func applySyncDemoEdits(_ args: [String]) {
+        if let idx = args.firstIndex(of: "-SyncDemoLabel"), args.indices.contains(idx + 1) {
+            let parts = args[idx + 1].split(separator: "=", maxSplits: 1).map(String.init)
+            if parts.count == 2 { store.setDisplayLabel(parts[1], for: parts[0]) }
+        }
+        if let idx = args.firstIndex(of: "-SyncDemoHide"), args.indices.contains(idx + 1) {
+            store.hideAfterConfirm(args[idx + 1])
+        }
+    }
+
     private func consumeLaunchArguments() {
         let args = ProcessInfo.processInfo.arguments
         grid.applySizeClassDefaultsIfNeeded(isCompact: horizontalSizeClass == .compact)
         mode.applyLaunchArguments(args)
         profiles.applyLaunchArguments(args, overlay: store, grid: grid)
         grid.applyLaunchArguments(args)
+        applySyncDemoEdits(args)
         if let idx = args.firstIndex(of: "-ImportBoard"), args.indices.contains(idx + 1) {
             let path = args[idx + 1]
             Task { @MainActor in
