@@ -203,6 +203,41 @@ final class CardStore {
         folderPath = clampedFolderPath(folderPath)
     }
 
+    /// Replace this device's boards, edits, on-device pictures, and settings (every profile)
+    /// with a backup. The whole file is checked first, so a bad file changes nothing.
+    @discardableResult
+    func restoreBackup(_ data: Data, defaults: UserDefaults = .standard) throws -> VocabularyBackup {
+        let backup = try VocabularyBackupIO.decode(data)
+        let hadImport = hasImportedBoard
+        VocabularyBackupIO.writeFiles(backup, cache: cache, defaults: defaults)
+        let saved = backup.profiles[activeProfile.fileKey]
+        if let raw = cache.loadImportedBoard(for: activeProfile), let document = try? BoardImport.decode(raw) {
+            applyImportedDocument(document, raw: raw, bundle: nil)
+        } else if hadImport {
+            clearImportedBoard()
+        }
+        if let saved {
+            // Importing and clearing reset these; put the backup's versions back.
+            SyncPlanner.writeOverlays(saved.doc.overlays, cache: cache, profile: activeProfile)
+            cache.saveProfileSettings(saved.settings, for: activeProfile)
+            cache.saveMessageBarSettings(saved.messageBar, for: activeProfile)
+            saved.doc.images.keys.forEach(bumpImage)
+        }
+        reloadOverlaysFromDisk()
+        settings = cache.loadProfileSettings(for: activeProfile)
+        messageBar = hasImportedBoard ? settings.messageBar : cache.loadMessageBarSettings(for: activeProfile)
+        applyVoiceSettings()
+        recentSlugs = Self.sanitizedRecents(cache.loadRecents(for: activeProfile))
+        strip.clear()
+        banner = "Restored the backup from \(backup.createdAt.formatted(date: .abbreviated, time: .shortened))."
+        return backup
+    }
+
+    /// Everything on this device as one backup file.
+    func makeBackupData(defaults: UserDefaults = .standard) throws -> Data {
+        try VocabularyBackupIO.encode(VocabularyBackupIO.make(cache: cache, defaults: defaults))
+    }
+
     /// Same path the caregiver profile switcher uses. Reloads this profile's
     /// hide list, order, labels, recents, and folder path. Clears the sentence strip.
     /// Recents are not wiped. Does not refetch the server board or touch cached PECS/MP3 files.
