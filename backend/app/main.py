@@ -20,9 +20,10 @@ from typing import Any
 
 import httpx
 
+from app.http_cache import conditional_json
 from app.image_trim import trim_and_pad_file
 from app.sync import router as sync_router
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -469,11 +470,13 @@ async def health() -> dict[str, bool]:
 
 @app.get("/v1/board")
 async def get_board(
+    request: Request,
     folder_id: str | None = Query(
         default=None,
         description="If set, return children of that folder; else root items",
     ),
-) -> dict[str, Any]:
+) -> Response:
+    """Board JSON with an ETag. Send `If-None-Match` to get `304` when nothing changed."""
     board = reconcile_board(load_board())
     folders = board["folders"]
     card_folder = board["card_folder"]
@@ -485,7 +488,7 @@ async def get_board(
         for child_slug in folders[folder_id].get("children") or []:
             if card_exists(child_slug):
                 items.append(word_card_payload(child_slug, folder_id=folder_id))
-        return {"items": items, "folder_id": folder_id, "count": len(items)}
+        return conditional_json(request, {"items": items, "folder_id": folder_id, "count": len(items)})
 
     items = []
     for slug in board["root_order"]:
@@ -493,7 +496,7 @@ async def get_board(
             items.append(folder_stub(folders[slug]))
         elif card_exists(slug):
             items.append(word_card_payload(slug, folder_id=card_folder.get(slug)))
-    return {"items": items, "folder_id": None, "count": len(items)}
+    return conditional_json(request, {"items": items, "folder_id": None, "count": len(items)})
 
 
 @app.post("/v1/folders")
@@ -666,7 +669,7 @@ async def create_card(body: CreateCardRequest) -> CardResponse:
 
 
 @app.get("/v1/cards")
-async def list_cards() -> dict[str, Any]:
+async def list_cards(request: Request) -> Response:
     """Flat list of word cards only (backward compatible for old clients)."""
     board = reconcile_board(load_board())
     card_folder = board.get("card_folder") or {}
@@ -683,7 +686,7 @@ async def list_cards() -> dict[str, Any]:
             item["kind"] = "word"
             item["folder_id"] = card_folder.get(child.name)
             cards.append(item)
-    return {"cards": cards, "count": len(cards)}
+    return conditional_json(request, {"cards": cards, "count": len(cards)})
 
 
 @app.get("/v1/cards/{slug}")
