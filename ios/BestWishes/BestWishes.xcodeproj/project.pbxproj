@@ -73,6 +73,7 @@
 		B10000000000000000000001 /* HoldToEditUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* HoldToEditUITests.swift */; };
 		C1C635D0A05A8172E571A72E /* LayoutFitUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C635D0A05A8172E571A72E /* LayoutFitUITests.swift */; };
 		C1C5B5F3188EAC5741C4E245 /* WordFormsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C5B5F3188EAC5741C4E245 /* WordFormsUITests.swift */; };
+		C1B113A980D73C38D0FB264E /* BackupUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2B113A980D73C38D0FB264E /* BackupUITests.swift */; };
 		C16C6732B8F7E622A9747ABA /* NewPictureUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C26C6732B8F7E622A9747ABA /* NewPictureUITests.swift */; };
 		B10000000000000000000010 /* PerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000010 /* PerformanceTests.swift */; };
 		B10000000000000000000011 /* ThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000011 /* ThumbnailCache.swift */; };
@@ -167,6 +168,7 @@
 		B20000000000000000000001 /* HoldToEditUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldToEditUITests.swift; sourceTree = "<group>"; };
 		C2C635D0A05A8172E571A72E /* LayoutFitUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutFitUITests.swift; sourceTree = "<group>"; };
 		C2C5B5F3188EAC5741C4E245 /* WordFormsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordFormsUITests.swift; sourceTree = "<group>"; };
+		C2B113A980D73C38D0FB264E /* BackupUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupUITests.swift; sourceTree = "<group>"; };
 		C26C6732B8F7E622A9747ABA /* NewPictureUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewPictureUITests.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* BestWishesUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BestWishesUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B20000000000000000000010 /* PerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
@@ -319,6 +321,7 @@
 				B20000000000000000000001 /* HoldToEditUITests.swift */,
 				C2C635D0A05A8172E571A72E /* LayoutFitUITests.swift */,
 				C2C5B5F3188EAC5741C4E245 /* WordFormsUITests.swift */,
+				C2B113A980D73C38D0FB264E /* BackupUITests.swift */,
 				C26C6732B8F7E622A9747ABA /* NewPictureUITests.swift */,
 			);
 			path = BestWishesUITests;
@@ -535,6 +538,7 @@
 				B10000000000000000000001 /* HoldToEditUITests.swift in Sources */,
 				C1C635D0A05A8172E571A72E /* LayoutFitUITests.swift in Sources */,
 				C1C5B5F3188EAC5741C4E245 /* WordFormsUITests.swift in Sources */,
+				C1B113A980D73C38D0FB264E /* BackupUITests.swift in Sources */,
 				C16C6732B8F7E622A9747ABA /* NewPictureUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
