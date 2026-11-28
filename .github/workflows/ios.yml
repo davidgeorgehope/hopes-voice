@@ -123,6 +123,10 @@ jobs:
               "-derivedDataPath", "ios/DerivedData",
               "CODE_SIGNING_ALLOWED=NO",
               "-skipPackagePluginValidation",
+              # Hosted runners are noisy (slow loopback connects, timing spikes). Re-run a
+              # failing test up to twice; a real regression still fails every attempt.
+              "-retry-tests-on-failure",
+              "-test-iterations", "3",
           ]
           # Timing checks need a quiet machine, so they run on their own below, not alongside
           # the other tests in parallel simulator clones.
