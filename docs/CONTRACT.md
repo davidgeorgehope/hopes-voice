@@ -131,8 +131,13 @@ Children are moved to root (not deleted):
 }
 ```
 
+## Remote board sync
+
+Authenticated, versioned per-profile boards live under `/v1/sync/*`. They are documented in [`SYNC.md`](SYNC.md); every route needs a bearer token, unlike the card routes above.
+
 ## Persistence
 
 - Word assets: `data/cards/<slug>/{image.png,audio.mp3,meta.json}`
 - Board tree: `data/board.json` (`folders`, `card_folder`, `root_order`)
 - Folder icon: `data/system/folder.png` → `/system/folder.png`
+- Sync versions, device-token hashes and pictures: `data/sync/` (never public, never in git)

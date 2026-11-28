@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import os
 
 /// Disk cache for PECS images, MP3s, and the last successful board snapshot.
 final class AssetCache: Sendable {
@@ -11,6 +12,31 @@ final class AssetCache: Sendable {
     private let hiddenURL: URL
     private let boardsURL: URL
     private let fileManager = FileManager.default
+    private let changeState = OSAllocatedUnfairLock(initialState: ChangeState())
+
+    private struct ChangeState {
+        var observer: (@Sendable (KidProfile?) -> Void)?
+        var mutedDepth = 0
+    }
+
+    var rootURL: URL { root }
+
+    /// Called after a local edit is written (`nil` profile = a picture, shared by every profile).
+    /// Sync uses this to know when to push. Writes made by sync itself are muted.
+    func setChangeObserver(_ observer: (@Sendable (KidProfile?) -> Void)?) {
+        changeState.withLock { $0.observer = observer }
+    }
+
+    func withoutChangeNotifications<T>(_ body: () throws -> T) rethrows -> T {
+        changeState.withLock { $0.mutedDepth += 1 }
+        defer { changeState.withLock { $0.mutedDepth -= 1 } }
+        return try body()
+    }
+
+    private func noteChange(_ profile: KidProfile?) {
+        let observer = changeState.withLock { $0.mutedDepth == 0 ? $0.observer : nil }
+        observer?(profile)
+    }
 
     init(root: URL? = nil) {
         let resolved: URL
@@ -66,6 +92,7 @@ final class AssetCache: Sendable {
     /// Write a caregiver photo (or a trimmed generated replacement) and mark it on-device only.
     @discardableResult
     func saveLocalImage(_ image: UIImage, for slug: String) -> Bool {
+        defer { noteChange(nil) }
         guard let data = image.pngData() else { return false }
         let dir = directory(for: slug)
         try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -75,6 +102,29 @@ final class AssetCache: Sendable {
             return true
         } catch {
             print("BestWishes: failed to save local image for \(slug): \(error)")
+            return false
+        }
+    }
+
+    /// Slugs that have a caregiver photo on this device (these are what sync shares).
+    func localImageSlugs() -> [String] {
+        let assets = root.appendingPathComponent("assets", isDirectory: true)
+        let names = (try? fileManager.contentsOfDirectory(atPath: assets.path)) ?? []
+        return names.filter { isLocalImage($0) && hasImage($0) }.sorted()
+    }
+
+    /// Write picture bytes that came from sync (already PNG) and mark them on-device.
+    @discardableResult
+    func writeLocalImageData(_ data: Data, for slug: String) -> Bool {
+        defer { noteChange(nil) }
+        let dir = directory(for: slug)
+        try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+        do {
+            try data.write(to: imageURL(for: slug), options: .atomic)
+            try Data("local".utf8).write(to: localImageMarkerURL(for: slug), options: .atomic)
+            return true
+        } catch {
+            print("BestWishes: failed to write synced image for \(slug): \(error)")
             return false
         }
     }
@@ -132,6 +182,7 @@ final class AssetCache: Sendable {
 
     /// Local hide overlay. Not a server DELETE — persists next to grouping.json.
     func saveHiddenSlugs(_ slugs: Set<String>, for profile: KidProfile) {
+        defer { noteChange(profile) }
         do {
             let data = try JSONEncoder().encode(slugs.sorted())
             try data.write(to: hiddenFileURL(for: profile), options: .atomic)
@@ -176,6 +227,7 @@ final class AssetCache: Sendable {
 
     /// Local cell order overlay per folder (empty key is root). Not a server order API.
     func saveOrderOverlays(_ overlays: [String: [String]], for profile: KidProfile) {
+        defer { noteChange(profile) }
         do {
             let data = try JSONEncoder().encode(overlays)
             try data.write(to: orderFileURL(for: profile), options: .atomic)
@@ -191,6 +243,7 @@ final class AssetCache: Sendable {
 
     /// Local display-label overlay keyed by slug. Server `word` is unchanged.
     func saveLabelOverlays(_ overlays: [String: String], for profile: KidProfile) {
+        defer { noteChange(profile) }
         do {
             let data = try JSONEncoder().encode(overlays)
             try data.write(to: labelsFileURL(for: profile), options: .atomic)
@@ -213,6 +266,7 @@ final class AssetCache: Sendable {
     }
 
     func savePositionOverlays(_ overlays: [String: [String: GridCoord]], for profile: KidProfile) {
+        defer { noteChange(profile) }
         do {
             let data = try JSONEncoder().encode(overlays)
             try data.write(to: positionsFileURL(for: profile), options: .atomic)
@@ -231,6 +285,7 @@ final class AssetCache: Sendable {
     }
 
     func saveSpeakOverlays(_ overlays: [String: String], for profile: KidProfile) {
+        defer { noteChange(profile) }
         do {
             let data = try JSONEncoder().encode(overlays)
             try data.write(to: speakFileURL(for: profile), options: .atomic)
@@ -249,6 +304,7 @@ final class AssetCache: Sendable {
     }
 
     func saveStyleOverlays(_ overlays: [String: CellStyle], for profile: KidProfile) {
+        defer { noteChange(profile) }
         do {
             let data = try JSONEncoder().encode(overlays)
             try data.write(to: stylesFileURL(for: profile), options: .atomic)
@@ -357,6 +413,7 @@ final class AssetCache: Sendable {
     }
 
     func saveImportedBoard(_ data: Data, for profile: KidProfile) {
+        defer { noteChange(profile) }
         do {
             try data.write(to: importedBoardFileURL(for: profile), options: .atomic)
         } catch {
