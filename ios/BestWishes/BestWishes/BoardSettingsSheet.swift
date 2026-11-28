@@ -7,24 +7,84 @@ struct BoardSettingsSheet: View {
     @Bindable var store: CardStore
     var grid: GridLayout
     var sync: SyncCoordinator?
+    var profiles: ProfileStore?
     var onDismiss: () -> Void
     var onImport: () -> Void
 
     @State private var draft: ProfileSettings
+    @State private var profileName: String
     @State private var confirmClear = false
 
-    init(store: CardStore, grid: GridLayout, sync: SyncCoordinator? = nil, onDismiss: @escaping () -> Void, onImport: @escaping () -> Void) {
+    init(
+        store: CardStore,
+        grid: GridLayout,
+        sync: SyncCoordinator? = nil,
+        profiles: ProfileStore? = nil,
+        onDismiss: @escaping () -> Void,
+        onImport: @escaping () -> Void
+    ) {
         self.store = store
         self.grid = grid
         self.sync = sync
+        self.profiles = profiles
         self.onDismiss = onDismiss
         self.onImport = onImport
-        _draft = State(initialValue: store.settings)
+        _draft = State(initialValue: Self.initialDraft(store: store, grid: grid))
+        _profileName = State(initialValue: Self.initialProfileName(store: store, profiles: profiles))
+    }
+
+    /// Settings the sheet shows. A default board edits the live grid. An import edits the viewport.
+    static func initialDraft(store: CardStore, grid: GridLayout) -> ProfileSettings {
+        var draft = store.settings
+        if !store.hasImportedBoard {
+            draft.viewportRows = grid.rowCount
+            draft.viewportCols = grid.columnCount
+        }
+        return draft
+    }
+
+    /// Blank when the active profile still uses its identity string, so the placeholder shows that string.
+    static func initialProfileName(store: CardStore, profiles: ProfileStore?) -> String {
+        guard let profiles else { return "" }
+        let shown = profiles.displayName(for: store.activeProfile)
+        return shown == store.activeProfile.rawValue ? "" : shown
+    }
+
+    static func visibleRowRange(hasImportedBoard: Bool) -> ClosedRange<Int> {
+        hasImportedBoard ? 2...12 : GridLayout.allowedRowRange
+    }
+
+    static func apply(
+        _ draft: ProfileSettings,
+        store: CardStore,
+        grid: GridLayout,
+        profiles: ProfileStore?,
+        displayName: String
+    ) {
+        store.updateSettings(draft)
+        if !store.hasImportedBoard {
+            grid.setColumnCount(draft.viewportCols)
+            grid.setRowCount(draft.viewportRows)
+        }
+        profiles?.setDisplayName(displayName, for: store.activeProfile)
     }
 
     var body: some View {
         NavigationStack {
             Form {
+                Section("Profile") {
+                    HStack {
+                        Text("Name")
+                        Spacer()
+                        TextField(store.activeProfile.rawValue, text: $profileName)
+                            .multilineTextAlignment(.trailing)
+                            .autocorrectionDisabled()
+                            .accessibilityIdentifier("settingsProfileName")
+                    }
+                    Text("Shown on the profile switcher. Stays on this device. Leave blank for \(store.activeProfile.rawValue).")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
                 Section("Board") {
                     ColorHexField(title: "Background", hex: $draft.backgroundHex)
                     Picker("Color mode", selection: $draft.colorMode) {
@@ -32,8 +92,16 @@ struct BoardSettingsSheet: View {
                         Text("Border only").tag("border")
                         Text("Fill").tag("fill")
                     }
-                    Stepper("Visible rows: \(draft.viewportRows)", value: $draft.viewportRows, in: 2...12)
-                    Stepper("Visible columns: \(draft.viewportCols)", value: $draft.viewportCols, in: 2...8)
+                    Stepper(
+                        "Visible rows: \(draft.viewportRows)",
+                        value: $draft.viewportRows,
+                        in: Self.visibleRowRange(hasImportedBoard: store.hasImportedBoard)
+                    )
+                    Stepper(
+                        "Visible columns: \(draft.viewportCols)",
+                        value: $draft.viewportCols,
+                        in: GridLayout.allowedColumnRange
+                    )
                     if !store.hasImportedBoard {
                         Toggle("Color by word type", isOn: Binding(
                             get: { draft.colorScheme == ProfileSettings.fitzgeraldScheme },
@@ -81,7 +149,10 @@ struct BoardSettingsSheet: View {
                     )
                 }
                 if let sync {
-                    SyncSettingsSection(sync: sync, profileName: store.activeProfile.displayName)
+                    SyncSettingsSection(
+                        sync: sync,
+                        profileName: profiles?.displayName(for: store.activeProfile) ?? store.activeProfile.displayName
+                    )
                 }
                 Section("Import") {
                     Button("Import a board file…", action: onImport)
@@ -106,8 +177,13 @@ struct BoardSettingsSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        store.updateSettings(draft)
-                        grid.setColumnCount(draft.viewportCols)
+                        Self.apply(
+                            draft,
+                            store: store,
+                            grid: grid,
+                            profiles: profiles,
+                            displayName: profileName
+                        )
                         onDismiss()
                     }
                     .accessibilityIdentifier("settingsSave")
