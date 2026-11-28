@@ -78,7 +78,7 @@ struct BoardChrome: Equatable {
     }
 
     /// Flattest a default-board button may get (height ÷ width) before we show fewer rows.
-    static let minimumCellAspect: CGFloat = 0.62
+    static let minimumCellAspect: CGFloat = 0.55
 
     /// Default-board cell height on iPad. Fit `rows` rows to the height, but if that makes
     /// buttons flatter than `minimumCellAspect` (landscape, or many rows), show fewer whole
