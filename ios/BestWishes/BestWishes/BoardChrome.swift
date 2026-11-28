@@ -15,14 +15,6 @@ extension EnvironmentValues {
     }
 }
 
-struct BoardWidthPreference: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        let next = nextValue()
-        if next > 0 { value = next }
-    }
-}
-
 /// Size-class-aware measurements so the board, core row, and sentence bar fit the screen width.
 struct BoardChrome: Equatable {
     let isCompact: Bool
@@ -55,12 +47,35 @@ struct BoardChrome: Equatable {
     let cellLabelMinHeight: CGFloat
     let highlightStroke: CGFloat
 
-    var cellWidth: CGFloat {
-        let inner = availableWidth - gridPadding * 2 - gridSpacing * CGFloat(max(columnCount - 1, 0))
-        return max((inner / CGFloat(max(columnCount, 1))).rounded(.down), 1)
+    var cellWidth: CGFloat { cellWidth(columns: columnCount) }
+
+    /// Width of one board cell when `columns` cells share the board width. Cells are given
+    /// exactly this width so a wide label or picture can never push the grid off-screen.
+    func cellWidth(columns: Int) -> CGFloat {
+        let columns = max(columns, 1)
+        let inner = availableWidth - gridPadding * 2 - gridSpacing * CGFloat(columns - 1)
+        return max((inner / CGFloat(columns)).rounded(.down), 1)
     }
 
     var coreRowHeight: CGFloat { coreImageHeight + coreLabelHeight }
+
+    /// Shortest a board cell may get before the board scrolls vertically instead.
+    var minimumCellHeight: CGFloat { isCompact ? 64 : 80 }
+
+    /// Height of one cell when `rows` rows (plus padding and spacing) share `available`
+    /// points, floored at `minimum`.
+    static func fittedCellHeight(
+        available: CGFloat,
+        rows: Int,
+        verticalPadding: CGFloat,
+        spacing: CGFloat,
+        minimum: CGFloat
+    ) -> CGFloat {
+        let rows = max(rows, 1)
+        let inner = available - verticalPadding * 2 - spacing * CGFloat(rows - 1)
+        let fitted = (inner / CGFloat(rows)).rounded(.down)
+        return max(fitted, minimum)
+    }
 
     var chipHeight: CGFloat { chipImageHeight + chipLabelHeight }
 
@@ -146,8 +161,8 @@ struct BoardChrome: Equatable {
             coreImageHeight: coreImageHeight,
             coreLabelHeight: coreLabelHeight,
             coreTitleSize: compact ? 13 : 22,
-            cellTitleSize: compact ? 16 : 26,
-            cellLabelMinHeight: compact ? 36 : 64,
+            cellTitleSize: compact ? 16 : 24,
+            cellLabelMinHeight: compact ? 32 : 46,
             highlightStroke: highlightStroke
         )
     }
