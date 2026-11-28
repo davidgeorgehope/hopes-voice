@@ -302,4 +302,32 @@ final class BoardImportTests: XCTestCase {
         XCTAssertEqual(store.folderPath, ["food"], "opening the same folder twice should not nest it")
     }
 
+
+    /// Removing an import must bring back the default (server) board at once, not leave the
+    /// imported buttons on screen until the server board changes.
+    @MainActor
+    func testRemovingAnImportPutsTheServerBoardBack() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("bw-import-clear-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let cache = AssetCache(root: root)
+        let store = CardStore(api: APIClient(baseURL: APIClient.unreachableBaseURL), cache: cache, player: SpeechPlayer())
+        let car = BoardPayloadItem(kind: .word, slug: "car", word: "car", imageURL: "/v1/cards/car/image", audioURL: "/v1/cards/car/audio", folderId: nil)
+        let toys = BoardPayloadItem(kind: .folder, slug: "toys", word: "Toys", imageURL: "/system/folder.png", children: ["ball"], name: "Toys")
+        let ball = BoardPayloadItem(kind: .word, slug: "ball", word: "ball", imageURL: "/v1/cards/ball/image", audioURL: "/v1/cards/ball/audio", folderId: "toys")
+        store.applyBoard(BoardResponse(items: [car, toys], folderId: nil, count: 2))
+        store.applyBoard(BoardResponse(items: [ball], folderId: "toys", count: 1))
+        XCTAssertEqual(Set(store.currentItemIDs), ["car", "folder:toys"])
+
+        try store.importBoard(from: sampleURL())
+        XCTAssertTrue(store.hasImportedBoard)
+        XCTAssertFalse(store.cards.contains { $0.slug == "car" })
+
+        store.clearImportedBoard()
+
+        XCTAssertFalse(store.hasImportedBoard)
+        XCTAssertTrue(store.isAtRoot)
+        XCTAssertEqual(Set(store.currentItemIDs), ["car", "folder:toys"])
+        XCTAssertEqual(Set(store.cards.map(\.slug)), ["car", "ball"])
+        XCTAssertEqual(store.grouping.folders.map(\.id), ["toys"])
+    }
 }

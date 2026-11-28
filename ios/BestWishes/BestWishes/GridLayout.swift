@@ -66,6 +66,12 @@ final class GridLayout {
         }
     }
 
+    /// Back to the device's default size (after removing an imported board, which sets its own).
+    func resetToSizeClassDefaults(isCompact: Bool) {
+        setColumnCount(isCompact ? Self.defaultPhoneColumns : Self.defaultPadColumns)
+        setRowCount(isCompact ? Self.defaultPhoneRows : Self.defaultPadRows)
+    }
+
     /// Same path the caregiver profile switcher uses.
     func applyProfile(_ profile: KidProfile) {
         self.profile = profile

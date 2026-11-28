@@ -68,4 +68,26 @@ final class BoardChromeTests: XCTestCase {
         XCTAssertLessThanOrEqual(chrome.sentenceStripWidth, iPadWidth)
         XCTAssertLessThanOrEqual(chrome.coreRowWidth, iPadWidth)
     }
+
+    /// iPhone SE, 16 Pro, and Pro Max portrait widths plus an iPad mini: rows fit the width.
+    func testEveryRowFitsCommonPhoneAndPadWidths() {
+        for width: CGFloat in [375, 393, 440, 744] {
+            for columns in 2...8 {
+                let chrome = BoardChrome.make(horizontalSizeClass: width < 600 ? .compact : .regular, availableWidth: width, columnCount: columns)
+                XCTAssertLessThanOrEqual(chrome.boardRowWidth, width, "\(columns) columns at \(width)")
+                XCTAssertLessThanOrEqual(chrome.coreRowWidth, width, "core row at \(width)")
+                XCTAssertLessThanOrEqual(chrome.sentenceStripWidth, width, "message bar at \(width)")
+            }
+        }
+    }
+
+    func testFittedCellHeightSharesTheHeightAndHasAFloor() {
+        // 4 rows in 500 pt with 15 pt padding top and bottom and 8 pt gaps.
+        let h = BoardChrome.fittedCellHeight(available: 500, rows: 4, verticalPadding: 15, spacing: 8, minimum: 64)
+        XCTAssertEqual(h, 111)
+        XCTAssertLessThanOrEqual(h * 4 + 8 * 3 + 30, 500)
+        // A short landscape phone board floors at the minimum and scrolls instead.
+        XCTAssertEqual(BoardChrome.fittedCellHeight(available: 150, rows: 4, verticalPadding: 15, spacing: 8, minimum: 72), 72)
+        XCTAssertEqual(BoardChrome.fittedCellHeight(available: 500, rows: 0, verticalPadding: 15, spacing: 8, minimum: 72), 470)
+    }
 }
