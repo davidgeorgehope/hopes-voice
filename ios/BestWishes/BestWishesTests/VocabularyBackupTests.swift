@@ -41,6 +41,7 @@ final class VocabularyBackupTests: XCTestCase {
         cache.saveSpeakOverlays(["juice": "I want juice please"], for: .child1)
         cache.saveStyleOverlays(["juice": CellStyle(backgroundHex: "#93C47D", borderHex: "#111111")], for: .child1)
         cache.saveLabelOverlays(["dog": "puppy"], for: .child2)
+        cache.saveCards([Card(word: "grandma", slug: "grandma", imageURL: "", audioURL: "")])
         XCTAssertTrue(cache.saveLocalImage(photo(.red), for: "grandma"))
         var settings = ProfileSettings.default
         settings.colorScheme = "custom"
@@ -107,6 +108,18 @@ final class VocabularyBackupTests: XCTestCase {
         XCTAssertFalse(store.hasImportedBoard)
         XCTAssertNil(cache.loadImportedBoard(for: .child1))
         XCTAssertEqual(store.labelOverlays["juice"], "apple juice")
+    }
+
+    func testPhotosNoBoardUsesAnyMoreAreLeftOut() throws {
+        let (cache, defaults) = try device()
+        cache.saveCards([Card(word: "grandma", slug: "grandma", imageURL: "", audioURL: "")])
+        XCTAssertTrue(cache.saveLocalImage(photo(.red), for: "grandma"))
+        XCTAssertTrue(cache.saveLocalImage(photo(.blue), for: "old-import:0:0"))
+
+        let backup = VocabularyBackupIO.make(cache: cache, defaults: defaults)
+
+        XCTAssertEqual(Set(backup.profiles["child1"].map { Array($0.doc.images.keys) } ?? []), ["grandma"])
+        XCTAssertEqual(backup.pictures.count, 1)
     }
 
     func testDamagedOrForeignFilesChangeNothing() throws {

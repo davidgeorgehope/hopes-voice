@@ -1686,8 +1686,20 @@ struct ContentView: View {
             grid.resetToSizeClassDefaults(isCompact: horizontalSizeClass == .compact)
             store.goHome()
         }
+        if let idx = args.firstIndex(of: "-RestoreBackup"), args.indices.contains(idx + 1),
+           let data = try? Data(contentsOf: URL(fileURLWithPath: args[idx + 1])) {
+            do {
+                try store.restoreBackup(data)
+                grid.applyProfile(store.activeProfile)
+            } catch {
+                store.errorMessage = error.localizedDescription
+            }
+        }
         grid.applyLaunchArguments(args)
         applySyncDemoEdits(args)
+        if let idx = args.firstIndex(of: "-ExportBackup"), args.indices.contains(idx + 1) {
+            try? store.makeBackupData().write(to: URL(fileURLWithPath: args[idx + 1]), options: .atomic)
+        }
         if args.contains("-OpenSettings") { showingSettings = true }
         if let idx = args.firstIndex(of: "-ImportBoard"), args.indices.contains(idx + 1) {
             let path = args[idx + 1]

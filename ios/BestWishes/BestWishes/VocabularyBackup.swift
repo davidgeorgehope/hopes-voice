@@ -42,9 +42,14 @@ enum BackupError: LocalizedError, Equatable {
 enum VocabularyBackupIO {
     static func make(cache: AssetCache, defaults: UserDefaults = .standard) -> VocabularyBackup {
         var backup = VocabularyBackup()
+        let serverSlugs = Set(cache.loadCachedCards().map(\.slug))
+            .union((cache.loadGrouping() ?? .empty).folders.map(\.id))
         for profile in KidProfile.allCases {
             var state = SyncState()
-            let doc = SyncPlanner.snapshot(cache, profile, state: &state)
+            var doc = SyncPlanner.snapshot(cache, profile, state: &state)
+            // Only pictures a board still uses; photos left over from a removed import stay behind.
+            let used = serverSlugs.union(importedCellIDs(cache.loadImportedBoard(for: profile)))
+            doc.images = doc.images.filter { used.contains($0.key) }
             for slug in doc.images.keys {
                 if let sha = doc.images[slug], backup.pictures[sha] == nil,
                    let data = try? Data(contentsOf: cache.imageURL(for: slug)) {
@@ -61,6 +66,11 @@ enum VocabularyBackupIO {
             )
         }
         return backup
+    }
+
+    static func importedCellIDs(_ raw: Data?) -> Set<String> {
+        guard let raw, let document = try? BoardImport.decode(raw) else { return [] }
+        return Set(document.boards.flatMap { $0.cells.map(\.id) })
     }
 
     static func encode(_ backup: VocabularyBackup) throws -> Data {
